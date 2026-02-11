@@ -4,6 +4,8 @@
 
 Advanced Compressor is a JUCE 7 audio plugin (VST3/AU/CLAP/Standalone) implementing a professional dynamics compressor with 12 styles, character saturation, sidechain EQ, M/S processing, oversampling up to 32x, undo/redo, A/B comparison, and delta monitoring. Sister plugin to Advanced EQ (`../advanced-eq`).
 
+![Advanced Compressor](docs/images/plugin-screenshot.png)
+
 ## Build
 
 ```bash
