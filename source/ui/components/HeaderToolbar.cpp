@@ -1,0 +1,206 @@
+#include "HeaderToolbar.h"
+#include "../../PluginProcessor.h"
+#include "../../parameters/ParameterIDs.h"
+
+HeaderToolbar::HeaderToolbar (AdvancedCompressorProcessor& p)
+    : processor (p),
+      presetManager (p.getPresetManager())
+{
+    presetManager.addListener (this);
+    auto& apvts = processor.getAPVTS();
+
+    // Preset controls
+    prevButton.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
+    prevButton.setColour (juce::TextButton::textColourOffId, ColourPalette::textDim());
+    prevButton.onClick = [this] { presetManager.previousPreset(); };
+    addAndMakeVisible (prevButton);
+
+    nextButton.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
+    nextButton.setColour (juce::TextButton::textColourOffId, ColourPalette::textDim());
+    nextButton.onClick = [this] { presetManager.nextPreset(); };
+    addAndMakeVisible (nextButton);
+
+    presetNameButton.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
+    presetNameButton.setColour (juce::TextButton::textColourOffId, ColourPalette::textBright());
+    presetNameButton.onClick = [this] { showPresetMenu(); };
+    addAndMakeVisible (presetNameButton);
+
+    saveButton.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
+    saveButton.setColour (juce::TextButton::textColourOffId, ColourPalette::textDim());
+    saveButton.onClick = [this] { showSaveDialog(); };
+    addAndMakeVisible (saveButton);
+
+    updatePresetName();
+
+    // Style selector
+    styleSelector.addItemList (ParamIDs::getStyleNames(), 1);
+    styleSelector.setJustificationType (juce::Justification::centred);
+    addAndMakeVisible (styleSelector);
+    styleAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment> (
+        apvts, ParamIDs::kCompStyle, styleSelector);
+
+    // Oversample selector
+    oversampleSelector.addItemList (ParamIDs::getOversamplingNames(), 1);
+    oversampleSelector.setJustificationType (juce::Justification::centred);
+    addAndMakeVisible (oversampleSelector);
+    oversampleAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment> (
+        apvts, ParamIDs::kOversample, oversampleSelector);
+
+    // Analyzer toggle
+    analyzerButton.setClickingTogglesState (true);
+    analyzerButton.setColour (juce::TextButton::buttonOnColourId, ColourPalette::spectrumPost().withAlpha (0.3f));
+    addAndMakeVisible (analyzerButton);
+    analyzerAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (
+        apvts, ParamIDs::kAnalyzerOn, analyzerButton);
+
+    // Output gain knob
+    outputGainSlider.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
+    outputGainSlider.setTextBoxStyle (juce::Slider::NoTextBox, true, 0, 0);
+    addAndMakeVisible (outputGainSlider);
+    outputGainAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (
+        apvts, ParamIDs::kOutputGain, outputGainSlider);
+
+    outputGainLabel.setText ("Out", juce::dontSendNotification);
+    outputGainLabel.setJustificationType (juce::Justification::centred);
+    outputGainLabel.setFont (10.0f);
+    outputGainLabel.setColour (juce::Label::textColourId, ColourPalette::axisText());
+    addAndMakeVisible (outputGainLabel);
+}
+
+HeaderToolbar::~HeaderToolbar()
+{
+    presetManager.removeListener (this);
+    styleAttachment.reset();
+    oversampleAttachment.reset();
+    analyzerAttachment.reset();
+    outputGainAttachment.reset();
+}
+
+void HeaderToolbar::paint (juce::Graphics& g)
+{
+    auto bounds = getLocalBounds().toFloat();
+
+    juce::ColourGradient grad (ColourPalette::panelTop(), 0, bounds.getY(),
+                               ColourPalette::panelBottom(), 0, bounds.getBottom(), false);
+    g.setGradientFill (grad);
+    g.fillRect (bounds);
+
+    float bottomY = bounds.getBottom();
+    g.setColour (ColourPalette::bevelLight());
+    g.drawLine (0.0f, bottomY - 1.5f, bounds.getRight(), bottomY - 1.5f, 1.0f);
+    g.setColour (ColourPalette::bevelDark());
+    g.drawLine (0.0f, bottomY - 0.5f, bounds.getRight(), bottomY - 0.5f, 1.0f);
+
+    g.setFont (16.0f);
+    g.setColour (juce::Colour (0x40000000));
+    g.drawText ("Advanced Compressor", 13, 1, 170, getHeight(), juce::Justification::centredLeft, true);
+    g.setColour (ColourPalette::textBright());
+    g.drawText ("Advanced Compressor", 12, 0, 170, getHeight(), juce::Justification::centredLeft, true);
+}
+
+void HeaderToolbar::resized()
+{
+    auto bounds = getLocalBounds().reduced (8, 4);
+    bounds.removeFromLeft (176);
+
+    auto rightBounds = bounds;
+
+    auto outArea = rightBounds.removeFromRight (50);
+    auto outKnob = outArea.removeFromTop (outArea.getHeight() - 2);
+    outputGainSlider.setBounds (outKnob.withSizeKeepingCentre (28, 28));
+    outputGainLabel.setBounds (outArea);
+    rightBounds.removeFromRight (6);
+
+    auto osArea = rightBounds.removeFromRight (50);
+    oversampleSelector.setBounds (osArea.withHeight (22).withCentre (osArea.getCentre()));
+    rightBounds.removeFromRight (6);
+
+    auto styleArea = rightBounds.removeFromRight (90);
+    styleSelector.setBounds (styleArea.withHeight (22).withCentre (styleArea.getCentre()));
+    rightBounds.removeFromRight (6);
+
+    auto analyzerArea = rightBounds.removeFromRight (62);
+    analyzerButton.setBounds (analyzerArea.withHeight (22).withCentre (analyzerArea.getCentre()));
+    rightBounds.removeFromRight (4);
+
+    auto presetBounds = rightBounds;
+    presetBounds.removeFromRight (8);
+
+    auto presetArea = presetBounds.withSizeKeepingCentre (
+        juce::jmin (280, presetBounds.getWidth()), presetBounds.getHeight());
+
+    prevButton.setBounds (presetArea.removeFromLeft (24).withHeight (22).withCentre (
+        juce::Point<int> (presetArea.getX() - 12, presetArea.getCentreY())));
+
+    auto saveBtnArea = presetArea.removeFromRight (38);
+    saveButton.setBounds (saveBtnArea.withHeight (22).withCentre (saveBtnArea.getCentre()));
+    presetArea.removeFromRight (4);
+
+    auto nextBtnArea = presetArea.removeFromRight (24);
+    nextButton.setBounds (nextBtnArea.withHeight (22).withCentre (nextBtnArea.getCentre()));
+
+    presetArea.removeFromLeft (4);
+    presetArea.removeFromRight (4);
+    presetNameButton.setBounds (presetArea.withHeight (22).withCentre (presetArea.getCentre()));
+}
+
+void HeaderToolbar::presetChanged() { updatePresetName(); }
+void HeaderToolbar::updatePresetName() { presetNameButton.setButtonText (presetManager.getCurrentPresetName()); }
+
+void HeaderToolbar::showPresetMenu()
+{
+    juce::PopupMenu menu;
+    auto categories = presetManager.getCategories();
+    auto& allPresets = presetManager.getAllPresets();
+
+    for (auto& category : categories)
+    {
+        juce::PopupMenu subMenu;
+        for (int i = 0; i < (int) allPresets.size(); ++i)
+        {
+            if (allPresets[(size_t) i].category == category)
+            {
+                bool isCurrent = (i == presetManager.getCurrentPresetIndex());
+                subMenu.addItem (i + 1, allPresets[(size_t) i].name, true, isCurrent);
+            }
+        }
+        menu.addSubMenu (category, subMenu);
+    }
+
+    menu.addSeparator();
+    menu.addItem (-1, "Save Preset...");
+
+    auto idx = presetManager.getCurrentPresetIndex();
+    if (idx >= 0 && idx < (int) allPresets.size() && ! allPresets[(size_t) idx].isFactory)
+        menu.addItem (-2, "Delete \"" + allPresets[(size_t) idx].name + "\"");
+
+    menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&presetNameButton),
+        [this] (int result)
+        {
+            if (result == -1)
+                showSaveDialog();
+            else if (result == -2)
+                presetManager.deleteUserPreset (presetManager.getCurrentPresetIndex());
+            else if (result > 0)
+                presetManager.applyPreset (result - 1);
+        });
+}
+
+void HeaderToolbar::showSaveDialog()
+{
+    auto* nameEditor = new juce::AlertWindow ("Save Preset", "Enter a name for your preset:", juce::MessageBoxIconType::NoIcon);
+    nameEditor->addTextEditor ("name", presetManager.getCurrentPresetName(), "Preset name:");
+    nameEditor->addButton ("Save", 1);
+    nameEditor->addButton ("Cancel", 0);
+
+    nameEditor->enterModalState (true, juce::ModalCallbackFunction::create (
+        [this, nameEditor] (int result)
+        {
+            if (result == 1)
+            {
+                auto name = nameEditor->getTextEditorContents ("name");
+                presetManager.saveCurrentAsPreset (name);
+            }
+            delete nameEditor;
+        }), false);
+}
