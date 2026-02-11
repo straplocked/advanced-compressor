@@ -16,8 +16,13 @@ CompressorDisplay::CompressorDisplay (AdvancedCompressorProcessor& p)
     : processor (p)
 {
     addAndMakeVisible (kneeDisplay);
+
+    inputMeter.setLabel ("IN");
     addAndMakeVisible (inputMeter);
+
+    outputMeter.setLabel ("OUT");
     addAndMakeVisible (outputMeter);
+
     addAndMakeVisible (grDisplay);
 
     spectrumPre.prepare (Constants::kCurveResolution);

@@ -17,12 +17,14 @@ AdvancedCompressorEditor::AdvancedCompressorEditor (AdvancedCompressorProcessor&
     : AudioProcessorEditor (&p),
       headerToolbar (p),
       compressorDisplay (p),
+      featureBar (p),
       controlStrip (p)
 {
     setLookAndFeel (&lookAndFeel);
 
     addAndMakeVisible (headerToolbar);
     addAndMakeVisible (compressorDisplay);
+    addAndMakeVisible (featureBar);
     addAndMakeVisible (controlStrip);
 
     setSize (Constants::kDefaultEditorWidth, Constants::kDefaultEditorHeight);
@@ -46,5 +48,6 @@ void AdvancedCompressorEditor::resized()
 
     headerToolbar.setBounds (bounds.removeFromTop (36));
     controlStrip.setBounds (bounds.removeFromBottom (110));
+    featureBar.setBounds (bounds.removeFromBottom (36));
     compressorDisplay.setBounds (bounds);
 }

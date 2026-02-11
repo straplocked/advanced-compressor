@@ -38,6 +38,11 @@ void GainReductionDisplay::paint (juce::Graphics& g)
         g.fillRect (bounds.getX(), bounds.getY() + grHeight - 2.0f, w, 2.0f);
     }
 
+    // "GR" heading at top
+    g.setColour (ColourPalette::axisText());
+    g.setFont (9.0f);
+    g.drawText ("GR", bounds.withHeight (12.0f), juce::Justification::centred, false);
+
     // GR text
     g.setColour (ColourPalette::textBright());
     g.setFont (12.0f);

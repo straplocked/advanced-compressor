@@ -24,12 +24,15 @@ public:
 
     void setLevels (float leftDB, float rightDB);
     void setPeakHold (float leftPeak, float rightPeak);
+    void setLabel (const juce::String& label) { meterLabel = label; }
 
 private:
-    float levelToY (float dB) const;
+    float levelToY (float dB, float meterHeight) const;
 
     float leftLevel = Constants::kMeterMinDB;
     float rightLevel = Constants::kMeterMinDB;
     float leftPeak = Constants::kMeterMinDB;
     float rightPeak = Constants::kMeterMinDB;
+
+    juce::String meterLabel;
 };

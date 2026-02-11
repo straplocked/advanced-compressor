@@ -48,6 +48,7 @@ private:
     juce::ComboBox styleSelector;
     juce::ComboBox oversampleSelector;
     juce::ComboBox scaleSelector;
+    juce::Label styleLabel, oversampleLabel, scaleLabel;
     juce::TextButton analyzerButton { "Analyzer" };
     juce::Slider outputGainSlider;
     juce::Label outputGainLabel;

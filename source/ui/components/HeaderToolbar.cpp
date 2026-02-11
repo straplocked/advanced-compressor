@@ -159,6 +159,19 @@ HeaderToolbar::HeaderToolbar (AdvancedCompressorProcessor& p)
     oversampleAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment> (
         apvts, ParamIDs::kOversample, oversampleSelector);
 
+    // Combo box labels
+    auto setupComboLabel = [this] (juce::Label& label, const juce::String& text)
+    {
+        label.setText (text, juce::dontSendNotification);
+        label.setFont (9.0f);
+        label.setColour (juce::Label::textColourId, ColourPalette::axisText());
+        label.setJustificationType (juce::Justification::centredRight);
+        addAndMakeVisible (label);
+    };
+    setupComboLabel (styleLabel, "Style");
+    setupComboLabel (oversampleLabel, "OS");
+    setupComboLabel (scaleLabel, "UI");
+
     // Scale selector
     scaleSelector.addItemList ({ "75%", "100%", "125%", "150%", "200%" }, 1);
     scaleSelector.setSelectedId (2, juce::dontSendNotification); // default 100%
@@ -241,14 +254,20 @@ void HeaderToolbar::resized()
     outputGainLabel.setBounds (outArea);
     rightBounds.removeFromRight (6);
 
+    auto scaleLabelArea = rightBounds.removeFromRight (18);
+    scaleLabel.setBounds (scaleLabelArea.withHeight (22).withCentre (scaleLabelArea.getCentre()));
     auto scaleArea = rightBounds.removeFromRight (48);
     scaleSelector.setBounds (scaleArea.withHeight (22).withCentre (scaleArea.getCentre()));
     rightBounds.removeFromRight (4);
 
+    auto osLabelArea = rightBounds.removeFromRight (18);
+    oversampleLabel.setBounds (osLabelArea.withHeight (22).withCentre (osLabelArea.getCentre()));
     auto osArea = rightBounds.removeFromRight (50);
     oversampleSelector.setBounds (osArea.withHeight (22).withCentre (osArea.getCentre()));
     rightBounds.removeFromRight (6);
 
+    auto styleLabelArea = rightBounds.removeFromRight (30);
+    styleLabel.setBounds (styleLabelArea.withHeight (22).withCentre (styleLabelArea.getCentre()));
     auto styleArea = rightBounds.removeFromRight (90);
     styleSelector.setBounds (styleArea.withHeight (22).withCentre (styleArea.getCentre()));
     rightBounds.removeFromRight (6);

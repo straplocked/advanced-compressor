@@ -26,40 +26,52 @@ void LevelMeterComponent::setPeakHold (float lp, float rp)
     rightPeak = rp;
 }
 
-float LevelMeterComponent::levelToY (float dB) const
+float LevelMeterComponent::levelToY (float dB, float meterHeight) const
 {
-    float h = (float) getHeight();
     float normalized = (dB - Constants::kMeterMinDB) / (Constants::kMeterMaxDB - Constants::kMeterMinDB);
-    return h * (1.0f - juce::jlimit (0.0f, 1.0f, normalized));
+    return meterHeight * (1.0f - juce::jlimit (0.0f, 1.0f, normalized));
 }
 
 void LevelMeterComponent::paint (juce::Graphics& g)
 {
     auto bounds = getLocalBounds().toFloat();
+    float labelHeight = meterLabel.isNotEmpty() ? 12.0f : 0.0f;
+
+    // Draw label at top
+    if (meterLabel.isNotEmpty())
+    {
+        g.setColour (ColourPalette::axisText());
+        g.setFont (9.0f);
+        g.drawText (meterLabel, bounds.removeFromTop (labelHeight),
+                    juce::Justification::centred, false);
+    }
+
     float meterWidth = (bounds.getWidth() - 2.0f) * 0.5f;
 
     // Background
     g.setColour (ColourPalette::curveArea());
     g.fillRoundedRectangle (bounds, 2.0f);
 
+    float h = bounds.getHeight();
+    float meterTop = bounds.getY();
+
     auto drawMeter = [&] (float x, float dB, float peak)
     {
-        float h = bounds.getHeight();
-        float meterY = levelToY (dB);
+        float meterY = levelToY (dB, h);
 
         // Gradient meter bar
-        juce::ColourGradient gradient (ColourPalette::meterGreen(), x, h,
-                                        ColourPalette::meterRed(), x, 0.0f, false);
+        juce::ColourGradient gradient (ColourPalette::meterGreen(), x, meterTop + h,
+                                        ColourPalette::meterRed(), x, meterTop, false);
         gradient.addColour (0.6, ColourPalette::meterYellow());
         g.setGradientFill (gradient);
-        g.fillRect (x, meterY, meterWidth, h - meterY);
+        g.fillRect (x, meterTop + meterY, meterWidth, h - meterY);
 
         // Peak hold indicator
         if (peak > Constants::kMeterMinDB + 1.0f)
         {
-            float peakY = levelToY (peak);
+            float peakY = levelToY (peak, h);
             g.setColour (ColourPalette::textBright());
-            g.fillRect (x, peakY, meterWidth, 1.0f);
+            g.fillRect (x, meterTop + peakY, meterWidth, 1.0f);
         }
     };
 
