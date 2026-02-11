@@ -57,6 +57,13 @@ void EnvelopeFollower::updateCoefficients()
         optoRelease1 = CompressorMath::timeToCoeff (effectiveRelease * 0.3f, currentSampleRate);
         optoRelease2 = CompressorMath::timeToCoeff (effectiveRelease * 2.0f, currentSampleRate);
     }
+
+    // Op-El gain-dependent attack coefficients
+    if (behavior.gainDepAttack)
+    {
+        opElFastAttack = CompressorMath::timeToCoeff (effectiveAttack * 0.2f, currentSampleRate);
+        opElSlowAttack = CompressorMath::timeToCoeff (effectiveAttack * 3.0f, currentSampleRate);
+    }
 }
 
 float EnvelopeFollower::processSample (float targetGR)
@@ -68,7 +75,19 @@ float EnvelopeFollower::processSample (float targetGR)
     {
         // Attack: GR is increasing (going more negative)
         holdCounter = holdSamples;
-        currentGR = attackCoeff * currentGR + (1.0f - attackCoeff) * targetGR;
+
+        if (behavior.gainDepAttack)
+        {
+            // Op-El: attack speed depends on GR depth -- more GR = slower attack
+            float grDepth = std::abs (targetGR);
+            float blend = std::min (grDepth / 15.0f, 1.0f);
+            float coeff = opElFastAttack * (1.0f - blend) + opElSlowAttack * blend;
+            currentGR = coeff * currentGR + (1.0f - coeff) * targetGR;
+        }
+        else
+        {
+            currentGR = attackCoeff * currentGR + (1.0f - attackCoeff) * targetGR;
+        }
     }
     else
     {

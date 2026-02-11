@@ -32,6 +32,41 @@ HeaderToolbar::HeaderToolbar (AdvancedCompressorProcessor& p)
 
     updatePresetName();
 
+    // Undo / Redo
+    undoButton.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
+    undoButton.setColour (juce::TextButton::textColourOffId, ColourPalette::textDim());
+    undoButton.onClick = [this] { processor.getUndoManager().undo(); };
+    addAndMakeVisible (undoButton);
+
+    redoButton.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
+    redoButton.setColour (juce::TextButton::textColourOffId, ColourPalette::textDim());
+    redoButton.onClick = [this] { processor.getUndoManager().redo(); };
+    addAndMakeVisible (redoButton);
+
+    // A/B comparison
+    abButton.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
+    abButton.setColour (juce::TextButton::textColourOffId, ColourPalette::textBright());
+    abButton.onClick = [this]
+    {
+        processor.toggleAB();
+        abButton.setButtonText (processor.isStateA() ? "A" : "B");
+    };
+    addAndMakeVisible (abButton);
+
+    copyABButton.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
+    copyABButton.setColour (juce::TextButton::textColourOffId, ColourPalette::textDim());
+    copyABButton.onClick = [this] { processor.copyAtoB(); };
+    addAndMakeVisible (copyABButton);
+
+    // Delta listen mode
+    deltaButton.setClickingTogglesState (true);
+    deltaButton.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
+    deltaButton.setColour (juce::TextButton::textColourOffId, ColourPalette::textDim());
+    deltaButton.setColour (juce::TextButton::buttonOnColourId, ColourPalette::gainReduction().withAlpha (0.3f));
+    addAndMakeVisible (deltaButton);
+    deltaAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (
+        apvts, ParamIDs::kDelta, deltaButton);
+
     // Style selector
     styleSelector.addItemList (ParamIDs::getStyleNames(), 1);
     styleSelector.setJustificationType (juce::Justification::centred);
@@ -70,6 +105,7 @@ HeaderToolbar::HeaderToolbar (AdvancedCompressorProcessor& p)
 HeaderToolbar::~HeaderToolbar()
 {
     presetManager.removeListener (this);
+    deltaAttachment.reset();
     styleAttachment.reset();
     oversampleAttachment.reset();
     analyzerAttachment.reset();
@@ -121,6 +157,29 @@ void HeaderToolbar::resized()
 
     auto analyzerArea = rightBounds.removeFromRight (62);
     analyzerButton.setBounds (analyzerArea.withHeight (22).withCentre (analyzerArea.getCentre()));
+    rightBounds.removeFromRight (4);
+
+    // Delta button
+    auto deltaArea = rightBounds.removeFromRight (42);
+    deltaButton.setBounds (deltaArea.withHeight (22).withCentre (deltaArea.getCentre()));
+    rightBounds.removeFromRight (4);
+
+    // A/B buttons
+    auto copyABArea = rightBounds.removeFromRight (30);
+    copyABButton.setBounds (copyABArea.withHeight (22).withCentre (copyABArea.getCentre()));
+    rightBounds.removeFromRight (2);
+
+    auto abArea = rightBounds.removeFromRight (22);
+    abButton.setBounds (abArea.withHeight (22).withCentre (abArea.getCentre()));
+    rightBounds.removeFromRight (4);
+
+    // Undo / Redo
+    auto redoArea = rightBounds.removeFromRight (36);
+    redoButton.setBounds (redoArea.withHeight (22).withCentre (redoArea.getCentre()));
+    rightBounds.removeFromRight (2);
+
+    auto undoArea = rightBounds.removeFromRight (36);
+    undoButton.setBounds (undoArea.withHeight (22).withCentre (undoArea.getCentre()));
     rightBounds.removeFromRight (4);
 
     auto presetBounds = rightBounds;

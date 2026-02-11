@@ -27,6 +27,12 @@ private:
     juce::TextButton presetNameButton { "Init" };
     juce::TextButton saveButton { "Save" };
 
+    juce::TextButton undoButton { "Undo" };
+    juce::TextButton redoButton { "Redo" };
+    juce::TextButton deltaButton { "Delta" };
+    juce::TextButton abButton { "A" };
+    juce::TextButton copyABButton { "A>B" };
+
     juce::ComboBox styleSelector;
     juce::ComboBox oversampleSelector;
     juce::TextButton analyzerButton { "Analyzer" };
@@ -37,6 +43,7 @@ private:
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> oversampleAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> analyzerAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> outputGainAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> deltaAttachment;
 
     void showPresetMenu();
     void showSaveDialog();

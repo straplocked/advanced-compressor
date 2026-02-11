@@ -8,7 +8,7 @@ AdvancedCompressorProcessor::AdvancedCompressorProcessor()
                       .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
                       .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
                       .withInput  ("Sidechain", juce::AudioChannelSet::stereo(), false)),
-      apvts (*this, nullptr, "AdvancedCompressorState", ParameterLayout::createLayout()),
+      apvts (*this, &undoManager, "AdvancedCompressorState", ParameterLayout::createLayout()),
       presetManager (apvts)
 {
     paramAttachment.init (apvts);
@@ -133,6 +133,46 @@ void AdvancedCompressorProcessor::setStateInformation (const void* data, int siz
     std::unique_ptr<juce::XmlElement> xml (getXmlFromBinary (data, sizeInBytes));
     if (xml != nullptr && xml->hasTagName (apvts.state.getType()))
         apvts.replaceState (juce::ValueTree::fromXml (*xml));
+}
+
+void AdvancedCompressorProcessor::toggleAB()
+{
+    if (currentIsA)
+    {
+        stateA = apvts.copyState();
+        if (stateB.isValid())
+            apvts.replaceState (stateB);
+    }
+    else
+    {
+        stateB = apvts.copyState();
+        if (stateA.isValid())
+            apvts.replaceState (stateA);
+    }
+    currentIsA = !currentIsA;
+}
+
+void AdvancedCompressorProcessor::copyAtoB()
+{
+    if (currentIsA)
+        stateB = apvts.copyState();
+    else
+    {
+        // We're on B, so stateA has A's settings
+        stateB = stateA.createCopy();
+        apvts.replaceState (stateB);
+    }
+}
+
+void AdvancedCompressorProcessor::copyBtoA()
+{
+    if (!currentIsA)
+        stateA = apvts.copyState();
+    else
+    {
+        stateA = stateB.createCopy();
+        apvts.replaceState (stateA);
+    }
 }
 
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()

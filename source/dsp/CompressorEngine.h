@@ -6,6 +6,8 @@
 #include "Oversampler.h"
 #include "AutoGainComputer.h"
 #include "MidSideProcessor.h"
+#include "CharacterProcessor.h"
+#include "AutoThreshold.h"
 #include "../parameters/CompressorParameterAttachment.h"
 #include "../metering/LevelMeterData.h"
 #include <vector>
@@ -42,6 +44,8 @@ private:
 
     Oversampler oversampler;
     AutoGainComputer autoGainComputer;
+    std::array<CharacterProcessor, 2> characterProcessors;
+    AutoThreshold autoThreshold;
 
     // Lookahead delay line
     std::vector<std::vector<float>> lookaheadBuffer;

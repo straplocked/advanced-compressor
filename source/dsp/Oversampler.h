@@ -11,7 +11,7 @@ public:
     void prepare (double sampleRate, int maxBlockSize, int numChannels);
     void reset();
 
-    void setFactor (int factorIndex);  // 0=1x, 1=2x, 2=4x
+    void setFactor (int factorIndex);  // 0=1x, 1=2x, 2=4x, 3=8x, 4=16x, 5=32x
 
     juce::dsp::AudioBlock<float> upsample (juce::AudioBuffer<float>& buffer);
     void downsample (juce::AudioBuffer<float>& buffer);

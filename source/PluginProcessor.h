@@ -43,8 +43,16 @@ public:
     FFTProcessor& getFFTProcessorPost() { return fftProcessorPost; }
     PresetManager& getPresetManager()   { return presetManager; }
     CompressorParameterAttachment& getParameterAttachment() { return paramAttachment; }
+    juce::UndoManager& getUndoManager() { return undoManager; }
+
+    // A/B comparison
+    bool isStateA() const { return currentIsA; }
+    void toggleAB();
+    void copyAtoB();
+    void copyBtoA();
 
 private:
+    juce::UndoManager undoManager { 30000, 30 };
     juce::AudioProcessorValueTreeState apvts;
     PresetManager presetManager;
     CompressorEngine compressorEngine;
@@ -52,6 +60,11 @@ private:
 
     FFTProcessor fftProcessorPre;
     FFTProcessor fftProcessorPost;
+
+    // A/B state storage
+    bool currentIsA = true;
+    juce::ValueTree stateA;
+    juce::ValueTree stateB;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AdvancedCompressorProcessor)
 };

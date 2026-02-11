@@ -9,6 +9,33 @@ void KneeDisplay::updateParameters (float thresh, float rat, float kn, float inp
     ratio = rat;
     knee = kn;
     inputLevel = inputDB;
+
+    // Add current operating point to trail
+    if (inputDB > displayMinDB)
+    {
+        float gr = CompressorMath::computeGainReduction (inputDB, threshold, ratio, knee, 60.0f);
+        float outputDB = inputDB + gr;
+
+        // Age existing points
+        for (auto& pt : trail)
+            pt.age += kTrailAgeStep;
+
+        // Remove old points
+        while (trail.size() >= (size_t) kMaxTrailPoints)
+            trail.pop_front();
+
+        trail.push_back ({ inputDB, outputDB, 0.0f });
+    }
+    else
+    {
+        // Fade out when no signal
+        for (auto& pt : trail)
+            pt.age += kTrailAgeStep * 2.0f;
+
+        while (!trail.empty() && trail.front().age >= 1.0f)
+            trail.pop_front();
+    }
+
     repaint();
 }
 
@@ -71,7 +98,25 @@ void KneeDisplay::paint (juce::Graphics& g)
     g.setColour (ColourPalette::transferCurve());
     g.strokePath (curvePath, juce::PathStrokeType (2.0f));
 
-    // Operating point
+    // Animated trail of recent operating points
+    for (const auto& pt : trail)
+    {
+        float alpha = 1.0f - pt.age;
+        if (alpha <= 0.0f)
+            continue;
+
+        float opX = bounds.getX() + (pt.inputDB - displayMinDB) / (displayMaxDB - displayMinDB) * w;
+        float opY = bounds.getY() + h - (pt.outputDB - displayMinDB) / (displayMaxDB - displayMinDB) * h;
+
+        opX = juce::jlimit (bounds.getX(), bounds.getRight(), opX);
+        opY = juce::jlimit (bounds.getY(), bounds.getBottom(), opY);
+
+        float size = 3.0f * alpha;
+        g.setColour (ColourPalette::operatingPoint().withAlpha (alpha * 0.4f));
+        g.fillEllipse (opX - size, opY - size, size * 2.0f, size * 2.0f);
+    }
+
+    // Current operating point (brightest)
     if (inputLevel > displayMinDB)
     {
         float gr = CompressorMath::computeGainReduction (inputLevel, threshold, ratio, knee, 60.0f);

@@ -47,4 +47,8 @@ private:
 
     // Program-dependent release state
     float prevTargetGR = 0.0f;
+
+    // Op-El gain-dependent attack state
+    float opElSlowAttack = 0.0f;
+    float opElFastAttack = 0.0f;
 };

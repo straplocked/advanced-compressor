@@ -69,9 +69,13 @@ namespace Constants
     constexpr float kPeakHoldTimeMs = 1500.0f;
     constexpr float kPeakDecayDBPerSec = 20.0f;
 
+    // Meter scale options (dB ranges)
+    constexpr float kMeterScaleRanges[] = { 9.0f, 18.0f, 36.0f, 60.0f, 90.0f };
+    constexpr int kDefaultMeterScaleIndex = 3;  // 60 dB
+
     // Max lookahead buffer (ms)
     constexpr float kMaxLookaheadMs = 20.0f;
 
     // Number of compressor styles
-    constexpr int kNumStyles = 8;
+    constexpr int kNumStyles = 12;
 }

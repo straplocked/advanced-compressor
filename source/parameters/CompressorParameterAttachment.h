@@ -25,6 +25,10 @@ struct CompressorParameters
 
     bool  scExternal  = false;
     bool  scAudition  = false;
+    bool  delta       = false;
+    int   charMode    = 0;
+    float charDrive   = 0.0f;
+    bool  autoThresh  = false;
     float scLCFreq    = 20.0f;
     bool  scLCOn      = false;
     float scBandFreq  = 1000.0f;
@@ -39,6 +43,7 @@ struct CompressorParameters
     bool  analyzerPre = false;
     int   oversample  = 0;
     bool  compactMode = false;
+    int   meterScale  = 3;  // default 60 dB
 };
 
 class CompressorParameterAttachment
@@ -68,6 +73,10 @@ public:
 
         rawSCExternal  = apvts.getRawParameterValue (ParamIDs::kSCExternal);
         rawSCAudition  = apvts.getRawParameterValue (ParamIDs::kSCAudition);
+        rawDelta       = apvts.getRawParameterValue (ParamIDs::kDelta);
+        rawCharMode    = apvts.getRawParameterValue (ParamIDs::kCharMode);
+        rawCharDrive   = apvts.getRawParameterValue (ParamIDs::kCharDrive);
+        rawAutoThresh  = apvts.getRawParameterValue (ParamIDs::kAutoThresh);
         rawSCLCFreq    = apvts.getRawParameterValue (ParamIDs::kSCLCFreq);
         rawSCLCOn      = apvts.getRawParameterValue (ParamIDs::kSCLCOn);
         rawSCBandFreq  = apvts.getRawParameterValue (ParamIDs::kSCBandFreq);
@@ -82,6 +91,7 @@ public:
         rawAnalyzerPre = apvts.getRawParameterValue (ParamIDs::kAnalyzerPre);
         rawOversample  = apvts.getRawParameterValue (ParamIDs::kOversample);
         rawCompactMode = apvts.getRawParameterValue (ParamIDs::kCompactMode);
+        rawMeterScale  = apvts.getRawParameterValue (ParamIDs::kMeterScale);
     }
 
     CompressorParameters getCurrentParameters() const
@@ -107,6 +117,10 @@ public:
 
         p.scExternal  = rawSCExternal->load() >= 0.5f;
         p.scAudition  = rawSCAudition->load() >= 0.5f;
+        p.delta       = rawDelta->load() >= 0.5f;
+        p.charMode    = (int) rawCharMode->load();
+        p.charDrive   = rawCharDrive->load();
+        p.autoThresh  = rawAutoThresh->load() >= 0.5f;
         p.scLCFreq    = rawSCLCFreq->load();
         p.scLCOn      = rawSCLCOn->load() >= 0.5f;
         p.scBandFreq  = rawSCBandFreq->load();
@@ -121,6 +135,7 @@ public:
         p.analyzerPre = rawAnalyzerPre->load() >= 0.5f;
         p.oversample  = (int) rawOversample->load();
         p.compactMode = rawCompactMode->load() >= 0.5f;
+        p.meterScale  = (int) rawMeterScale->load();
         return p;
     }
 
@@ -145,6 +160,10 @@ private:
 
     std::atomic<float>* rawSCExternal  = nullptr;
     std::atomic<float>* rawSCAudition  = nullptr;
+    std::atomic<float>* rawDelta       = nullptr;
+    std::atomic<float>* rawCharMode    = nullptr;
+    std::atomic<float>* rawCharDrive   = nullptr;
+    std::atomic<float>* rawAutoThresh  = nullptr;
     std::atomic<float>* rawSCLCFreq    = nullptr;
     std::atomic<float>* rawSCLCOn      = nullptr;
     std::atomic<float>* rawSCBandFreq  = nullptr;
@@ -159,4 +178,5 @@ private:
     std::atomic<float>* rawAnalyzerPre = nullptr;
     std::atomic<float>* rawOversample  = nullptr;
     std::atomic<float>* rawCompactMode = nullptr;
+    std::atomic<float>* rawMeterScale  = nullptr;
 };

@@ -15,6 +15,9 @@ void CompressorEngine::prepare (double sampleRate, int maxBlockSize, int numChan
 
     oversampler.prepare (sampleRate, maxBlockSize, numChannels);
     autoGainComputer.prepare (sampleRate);
+    for (auto& cp : characterProcessors)
+        cp.prepare (sampleRate);
+    autoThreshold.prepare (sampleRate);
 
     // Allocate lookahead buffer (max 20ms)
     int maxLookaheadSamples = (int)(0.020 * sampleRate) + 1;
@@ -37,6 +40,9 @@ void CompressorEngine::reset()
         sc.reset();
     oversampler.reset();
     autoGainComputer.reset();
+    for (auto& cp : characterProcessors)
+        cp.reset();
+    autoThreshold.reset();
 
     for (auto& ch : lookaheadBuffer)
         std::fill (ch.begin(), ch.end(), 0.0f);
@@ -76,6 +82,17 @@ void CompressorEngine::updateParameters (const CompressorParameters& params)
 
     oversampler.setFactor (params.oversample);
     lookaheadSamples = CompressorMath::msToSamples (params.lookaheadMs, currentSampleRate);
+
+    // Character processing
+    auto charMode = static_cast<CharacterMode> (params.charMode);
+    for (auto& cp : characterProcessors)
+    {
+        cp.setMode (charMode);
+        cp.setDrive (params.charDrive);
+    }
+
+    // Auto threshold
+    autoThreshold.setEnabled (params.autoThresh);
 }
 
 void CompressorEngine::process (juce::AudioBuffer<float>& buffer,
@@ -92,6 +109,26 @@ void CompressorEngine::process (juce::AudioBuffer<float>& buffer,
     // Measure input levels
     meterData.pushInputLevel (buffer);
 
+    // Feed auto threshold tracker
+    float blockPeak = 0.0f;
+    for (int ch = 0; ch < numChannels; ++ch)
+    {
+        const float* data = buffer.getReadPointer (ch);
+        for (int i = 0; i < numSamples; ++i)
+            blockPeak = std::max (blockPeak, std::abs (data[i]));
+    }
+    float blockPeakDB = blockPeak > 1e-10f ? 20.0f * std::log10 (blockPeak) : -80.0f;
+    autoThreshold.pushLevel (blockPeakDB);
+
+    // Apply auto threshold offset to cores
+    float threshOffset = autoThreshold.getThresholdOffset();
+    if (std::abs (threshOffset) > 0.01f)
+    {
+        float effectiveThresh = cachedParams.threshold + threshOffset;
+        for (auto& core : cores)
+            core.setThreshold (effectiveThresh);
+    }
+
     // Save dry copy for mix
     dryBuffer.makeCopyOf (buffer, true);
 
@@ -102,7 +139,9 @@ void CompressorEngine::process (juce::AudioBuffer<float>& buffer,
     // M/S encoding if needed
     bool isMidMode = cachedParams.stereoMode == 1;
     bool isSideMode = cachedParams.stereoMode == 2;
-    bool needMS = (isMidMode || isSideMode) && numChannels >= 2;
+    bool isMidToSide = cachedParams.stereoMode == 3;
+    bool isSideToMid = cachedParams.stereoMode == 4;
+    bool needMS = (isMidMode || isSideMode || isMidToSide || isSideToMid) && numChannels >= 2;
 
     if (needMS)
     {
@@ -140,6 +179,10 @@ void CompressorEngine::process (juce::AudioBuffer<float>& buffer,
         // M/S mode: only compress one component
         if (isMidMode) grR = 0.0f;
         if (isSideMode) grL = 0.0f;
+
+        // Cross-linking: M>S = mid GR applied to side, S>M = side GR applied to mid
+        if (isMidToSide) grR = grL;
+        if (isSideToMid) grL = grR;
 
         // Apply gain reduction with lookahead
         float gainL = MathUtils::dbToGain (grL);
@@ -182,6 +225,18 @@ void CompressorEngine::process (juce::AudioBuffer<float>& buffer,
     meterData.pushGainReduction (cores[0].getCurrentGR(),
                                   numChannels >= 2 ? cores[1].getCurrentGR() : cores[0].getCurrentGR());
 
+    // Character processing (saturation)
+    if (cachedParams.charMode > 0)
+    {
+        for (int ch = 0; ch < numChannels; ++ch)
+        {
+            float* data = buffer.getWritePointer (ch);
+            auto& charProc = characterProcessors[(size_t) ch];
+            for (int i = 0; i < numSamples; ++i)
+                data[i] = charProc.processSample (data[i]);
+        }
+    }
+
     // Wet gain
     float wetGainLinear = MathUtils::dbToGain (cachedParams.wetGain);
     buffer.applyGain (wetGainLinear);
@@ -203,6 +258,18 @@ void CompressorEngine::process (juce::AudioBuffer<float>& buffer,
             const float* dry = dryBuffer.getReadPointer (ch);
             for (int i = 0; i < numSamples; ++i)
                 wet[i] = dry[i] + mixAmount * (wet[i] - dry[i]);
+        }
+    }
+
+    // Delta mode: output only the difference (what compression removed)
+    if (cachedParams.delta)
+    {
+        for (int ch = 0; ch < numChannels; ++ch)
+        {
+            float* wet = buffer.getWritePointer (ch);
+            const float* dry = dryBuffer.getReadPointer (ch);
+            for (int i = 0; i < numSamples; ++i)
+                wet[i] = dry[i] - wet[i];
         }
     }
 

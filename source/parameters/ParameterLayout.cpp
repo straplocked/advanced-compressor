@@ -59,6 +59,27 @@ juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
         juce::NormalisableRange<float> (Constants::kMinLookahead, Constants::kMaxLookahead, 0.01f, 0.5f),
         Constants::kDefaultLookahead));
 
+    // ---- Character ----
+
+    layout.add (std::make_unique<juce::AudioParameterChoice> (
+        juce::ParameterID { ParamIDs::kCharMode, 1 },
+        "Character",
+        ParamIDs::getCharacterModeNames(),
+        0));
+
+    layout.add (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { ParamIDs::kCharDrive, 1 },
+        "Drive",
+        juce::NormalisableRange<float> (0.0f, 24.0f, 0.1f),
+        0.0f));
+
+    // ---- Auto Threshold ----
+
+    layout.add (std::make_unique<juce::AudioParameterBool> (
+        juce::ParameterID { ParamIDs::kAutoThresh, 1 },
+        "Auto Threshold",
+        false));
+
     // ---- Style ----
 
     layout.add (std::make_unique<juce::AudioParameterChoice> (
@@ -120,6 +141,11 @@ juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     layout.add (std::make_unique<juce::AudioParameterBool> (
         juce::ParameterID { ParamIDs::kSCAudition, 1 },
         "SC Audition",
+        false));
+
+    layout.add (std::make_unique<juce::AudioParameterBool> (
+        juce::ParameterID { ParamIDs::kDelta, 1 },
+        "Delta",
         false));
 
     layout.add (std::make_unique<juce::AudioParameterFloat> (
@@ -192,6 +218,12 @@ juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
         juce::ParameterID { ParamIDs::kCompactMode, 1 },
         "Compact Mode",
         false));
+
+    layout.add (std::make_unique<juce::AudioParameterChoice> (
+        juce::ParameterID { ParamIDs::kMeterScale, 1 },
+        "Meter Scale",
+        ParamIDs::getMeterScaleNames(),
+        Constants::kDefaultMeterScaleIndex));
 
     return layout;
 }

@@ -20,6 +20,7 @@ void CompressorCore::setStyle (CompressorStyle style)
     auto behavior = getStyleBehavior (style);
     detector.setMode (behavior.usePeak, behavior.useRMS);
     envelope.setStyle (style);
+    gainComputer.setVariableRatio (behavior.variableRatio);
     feedbackMode = behavior.feedback;
 }
 
