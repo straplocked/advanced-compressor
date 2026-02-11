@@ -23,7 +23,8 @@ public:
     void setRelease (float ms);
     void setHold (float ms);
 
-    // Process sidechain sample, returns gain reduction in dB (negative)
+    // Process sidechain sample, returns gain change in dB
+    // Downward: negative (reduction), Upward: positive (boost), TTM: combined
     float processSidechain (float scSample);
 
     // Get current gain reduction for metering
@@ -34,7 +35,13 @@ private:
     GainComputer gainComputer;
     EnvelopeFollower envelope;
 
+    // Second gain computer + envelope for TTM (upward part)
+    GainComputer upwardGainComputer;
+    EnvelopeFollower upwardEnvelope;
+
     float currentGR = 0.0f;
     float feedbackGR = 0.0f;
     bool feedbackMode = false;
+    bool upwardMode = false;
+    bool ttmMode = false;
 };

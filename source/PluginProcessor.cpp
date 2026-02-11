@@ -9,7 +9,8 @@ AdvancedCompressorProcessor::AdvancedCompressorProcessor()
                       .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
                       .withInput  ("Sidechain", juce::AudioChannelSet::stereo(), false)),
       apvts (*this, &undoManager, "AdvancedCompressorState", ParameterLayout::createLayout()),
-      presetManager (apvts)
+      presetManager (apvts),
+      midiLearnManager (apvts)
 {
     paramAttachment.init (apvts);
 }
@@ -60,7 +61,7 @@ bool AdvancedCompressorProcessor::isBusesLayoutSupported (const BusesLayout& lay
 }
 
 void AdvancedCompressorProcessor::processBlock (juce::AudioBuffer<float>& buffer,
-                                                  juce::MidiBuffer& /*midiMessages*/)
+                                                  juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
 
@@ -100,8 +101,11 @@ void AdvancedCompressorProcessor::processBlock (juce::AudioBuffer<float>& buffer
         }
     }
 
+    // Process MIDI learn CC mappings
+    midiLearnManager.processMidi (midiMessages);
+
     // Process compression
-    compressorEngine.process (buffer, sidechainBuffer);
+    compressorEngine.process (buffer, sidechainBuffer, midiMessages, getPlayHead());
 
     // Post-compressor spectrum
     if (analyzerOn)
@@ -124,6 +128,7 @@ juce::AudioProcessorEditor* AdvancedCompressorProcessor::createEditor()
 void AdvancedCompressorProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     auto state = apvts.copyState();
+    midiLearnManager.saveToState (state);
     std::unique_ptr<juce::XmlElement> xml (state.createXml());
     copyXmlToBinary (*xml, destData);
 }
@@ -132,7 +137,11 @@ void AdvancedCompressorProcessor::setStateInformation (const void* data, int siz
 {
     std::unique_ptr<juce::XmlElement> xml (getXmlFromBinary (data, sizeInBytes));
     if (xml != nullptr && xml->hasTagName (apvts.state.getType()))
-        apvts.replaceState (juce::ValueTree::fromXml (*xml));
+    {
+        auto state = juce::ValueTree::fromXml (*xml);
+        midiLearnManager.loadFromState (state);
+        apvts.replaceState (state);
+    }
 }
 
 void AdvancedCompressorProcessor::toggleAB()

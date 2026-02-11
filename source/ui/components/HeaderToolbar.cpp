@@ -1,6 +1,7 @@
 #include "HeaderToolbar.h"
 #include "../../PluginProcessor.h"
 #include "../../parameters/ParameterIDs.h"
+#include "../../midi/MIDILearnManager.h"
 
 HeaderToolbar::HeaderToolbar (AdvancedCompressorProcessor& p)
     : processor (p),
@@ -58,6 +59,72 @@ HeaderToolbar::HeaderToolbar (AdvancedCompressorProcessor& p)
     copyABButton.onClick = [this] { processor.copyAtoB(); };
     addAndMakeVisible (copyABButton);
 
+    // MIDI Learn toggle
+    midiLearnButton.setClickingTogglesState (true);
+    midiLearnButton.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
+    midiLearnButton.setColour (juce::TextButton::textColourOffId, ColourPalette::textDim());
+    midiLearnButton.setColour (juce::TextButton::buttonOnColourId, juce::Colour (0x40FF4444));
+    midiLearnButton.onClick = [this]
+    {
+        auto& learnMgr = processor.getMIDILearnManager();
+        if (midiLearnButton.getToggleState())
+        {
+            // Show popup to pick a parameter to learn
+            juce::PopupMenu menu;
+            auto styleNames = ParamIDs::getStyleNames();
+            // List common automatable parameters
+            struct ParamEntry { const char* id; const char* name; };
+            static const ParamEntry entries[] = {
+                { ParamIDs::kThreshold,  "Threshold" },
+                { ParamIDs::kRatio,      "Ratio" },
+                { ParamIDs::kKnee,       "Knee" },
+                { ParamIDs::kRange,      "Range" },
+                { ParamIDs::kAttack,     "Attack" },
+                { ParamIDs::kRelease,    "Release" },
+                { ParamIDs::kHold,       "Hold" },
+                { ParamIDs::kInputGain,  "Input Gain" },
+                { ParamIDs::kOutputGain, "Output Gain" },
+                { ParamIDs::kWetGain,    "Wet Gain" },
+                { ParamIDs::kMix,        "Mix" },
+                { ParamIDs::kCharDrive,  "Drive" },
+                { ParamIDs::kStereoLink, "Stereo Link" },
+            };
+            for (int i = 0; i < 13; ++i)
+                menu.addItem (i + 1, entries[i].name);
+            menu.addSeparator();
+            menu.addItem (100, "Clear All Mappings");
+
+            menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&midiLearnButton),
+                [this, &learnMgr] (int result)
+                {
+                    if (result >= 1 && result <= 13)
+                    {
+                        static const char* paramIDs[] = {
+                            ParamIDs::kThreshold, ParamIDs::kRatio, ParamIDs::kKnee,
+                            ParamIDs::kRange, ParamIDs::kAttack, ParamIDs::kRelease,
+                            ParamIDs::kHold, ParamIDs::kInputGain, ParamIDs::kOutputGain,
+                            ParamIDs::kWetGain, ParamIDs::kMix, ParamIDs::kCharDrive,
+                            ParamIDs::kStereoLink
+                        };
+                        learnMgr.startLearning (paramIDs[result - 1]);
+                    }
+                    else if (result == 100)
+                    {
+                        learnMgr.clearAll();
+                    }
+                    else
+                    {
+                        midiLearnButton.setToggleState (false, juce::dontSendNotification);
+                    }
+                });
+        }
+        else
+        {
+            learnMgr.stopLearning();
+        }
+    };
+    addAndMakeVisible (midiLearnButton);
+
     // Delta listen mode
     deltaButton.setClickingTogglesState (true);
     deltaButton.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
@@ -80,6 +147,22 @@ HeaderToolbar::HeaderToolbar (AdvancedCompressorProcessor& p)
     addAndMakeVisible (oversampleSelector);
     oversampleAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment> (
         apvts, ParamIDs::kOversample, oversampleSelector);
+
+    // Scale selector
+    scaleSelector.addItemList ({ "75%", "100%", "125%", "150%", "200%" }, 1);
+    scaleSelector.setSelectedId (2, juce::dontSendNotification); // default 100%
+    scaleSelector.setJustificationType (juce::Justification::centred);
+    scaleSelector.onChange = [this]
+    {
+        static constexpr float scaleFactors[] = { 0.75f, 1.0f, 1.25f, 1.5f, 2.0f };
+        int idx = scaleSelector.getSelectedId() - 1;
+        if (idx >= 0 && idx < 5)
+        {
+            if (auto* editor = dynamic_cast<juce::AudioProcessorEditor*> (getParentComponent()))
+                editor->setScaleFactor (scaleFactors[idx]);
+        }
+    };
+    addAndMakeVisible (scaleSelector);
 
     // Analyzer toggle
     analyzerButton.setClickingTogglesState (true);
@@ -147,6 +230,10 @@ void HeaderToolbar::resized()
     outputGainLabel.setBounds (outArea);
     rightBounds.removeFromRight (6);
 
+    auto scaleArea = rightBounds.removeFromRight (48);
+    scaleSelector.setBounds (scaleArea.withHeight (22).withCentre (scaleArea.getCentre()));
+    rightBounds.removeFromRight (4);
+
     auto osArea = rightBounds.removeFromRight (50);
     oversampleSelector.setBounds (osArea.withHeight (22).withCentre (osArea.getCentre()));
     rightBounds.removeFromRight (6);
@@ -171,6 +258,11 @@ void HeaderToolbar::resized()
 
     auto abArea = rightBounds.removeFromRight (22);
     abButton.setBounds (abArea.withHeight (22).withCentre (abArea.getCentre()));
+    rightBounds.removeFromRight (4);
+
+    // MIDI Learn
+    auto midiArea = rightBounds.removeFromRight (36);
+    midiLearnButton.setBounds (midiArea.withHeight (22).withCentre (midiArea.getCentre()));
     rightBounds.removeFromRight (4);
 
     // Undo / Redo
@@ -212,6 +304,21 @@ void HeaderToolbar::showPresetMenu()
     auto categories = presetManager.getCategories();
     auto& allPresets = presetManager.getAllPresets();
 
+    // Favorites section
+    auto favIndices = presetManager.getFavoriteIndices();
+    if (! favIndices.empty())
+    {
+        juce::PopupMenu favMenu;
+        for (int i : favIndices)
+        {
+            bool isCurrent = (i == presetManager.getCurrentPresetIndex());
+            favMenu.addItem (i + 1, allPresets[(size_t) i].name, true, isCurrent);
+        }
+        menu.addSubMenu ("Favorites", favMenu);
+        menu.addSeparator();
+    }
+
+    // Category sections
     for (auto& category : categories)
     {
         juce::PopupMenu subMenu;
@@ -220,7 +327,10 @@ void HeaderToolbar::showPresetMenu()
             if (allPresets[(size_t) i].category == category)
             {
                 bool isCurrent = (i == presetManager.getCurrentPresetIndex());
-                subMenu.addItem (i + 1, allPresets[(size_t) i].name, true, isCurrent);
+                juce::String label = allPresets[(size_t) i].name;
+                if (allPresets[(size_t) i].isFavorite)
+                    label = "* " + label;
+                subMenu.addItem (i + 1, label, true, isCurrent);
             }
         }
         menu.addSubMenu (category, subMenu);
@@ -230,6 +340,13 @@ void HeaderToolbar::showPresetMenu()
     menu.addItem (-1, "Save Preset...");
 
     auto idx = presetManager.getCurrentPresetIndex();
+    if (idx >= 0 && idx < (int) allPresets.size())
+    {
+        juce::String favLabel = allPresets[(size_t) idx].isFavorite
+            ? "Remove from Favorites" : "Add to Favorites";
+        menu.addItem (-3, favLabel);
+    }
+
     if (idx >= 0 && idx < (int) allPresets.size() && ! allPresets[(size_t) idx].isFactory)
         menu.addItem (-2, "Delete \"" + allPresets[(size_t) idx].name + "\"");
 
@@ -240,6 +357,8 @@ void HeaderToolbar::showPresetMenu()
                 showSaveDialog();
             else if (result == -2)
                 presetManager.deleteUserPreset (presetManager.getCurrentPresetIndex());
+            else if (result == -3)
+                presetManager.toggleFavorite (presetManager.getCurrentPresetIndex());
             else if (result > 0)
                 presetManager.applyPreset (result - 1);
         });

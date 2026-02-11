@@ -148,6 +148,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
         "Delta",
         false));
 
+    // SC Low Cut
     layout.add (std::make_unique<juce::AudioParameterFloat> (
         juce::ParameterID { ParamIDs::kSCLCFreq, 1 },
         "SC Low Cut",
@@ -159,6 +160,31 @@ juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
         "SC LC On",
         false));
 
+    layout.add (std::make_unique<juce::AudioParameterChoice> (
+        juce::ParameterID { ParamIDs::kSCLCSlope, 1 },
+        "SC LC Slope",
+        ParamIDs::getSCSlopeNames(),
+        1));  // default 12 dB/oct
+
+    // SC Low Shelf
+    layout.add (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { ParamIDs::kSCLSFreq, 1 },
+        "SC Low Shelf Freq",
+        juce::NormalisableRange<float> (Constants::kMinSCFreq, Constants::kMaxSCFreq, 0.0f, 0.25f),
+        200.0f));
+
+    layout.add (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { ParamIDs::kSCLSGain, 1 },
+        "SC Low Shelf Gain",
+        juce::NormalisableRange<float> (-15.0f, 15.0f, 0.1f),
+        0.0f));
+
+    layout.add (std::make_unique<juce::AudioParameterBool> (
+        juce::ParameterID { ParamIDs::kSCLSOn, 1 },
+        "SC LS On",
+        false));
+
+    // SC Band 1
     layout.add (std::make_unique<juce::AudioParameterFloat> (
         juce::ParameterID { ParamIDs::kSCBandFreq, 1 },
         "SC Band Freq",
@@ -172,6 +198,50 @@ juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
         0.0f));
 
     layout.add (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { ParamIDs::kSCBandQ, 1 },
+        "SC Band Q",
+        juce::NormalisableRange<float> (0.1f, 10.0f, 0.01f, 0.4f),
+        1.0f));
+
+    // SC Band 2
+    layout.add (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { ParamIDs::kSCBand2Freq, 1 },
+        "SC Band 2 Freq",
+        juce::NormalisableRange<float> (Constants::kMinSCFreq, Constants::kMaxSCFreq, 0.0f, 0.25f),
+        3000.0f));
+
+    layout.add (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { ParamIDs::kSCBand2Gain, 1 },
+        "SC Band 2 Gain",
+        juce::NormalisableRange<float> (-15.0f, 15.0f, 0.1f),
+        0.0f));
+
+    layout.add (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { ParamIDs::kSCBand2Q, 1 },
+        "SC Band 2 Q",
+        juce::NormalisableRange<float> (0.1f, 10.0f, 0.01f, 0.4f),
+        1.0f));
+
+    // SC High Shelf
+    layout.add (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { ParamIDs::kSCHSFreq, 1 },
+        "SC High Shelf Freq",
+        juce::NormalisableRange<float> (Constants::kMinSCFreq, Constants::kMaxSCFreq, 0.0f, 0.25f),
+        8000.0f));
+
+    layout.add (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { ParamIDs::kSCHSGain, 1 },
+        "SC High Shelf Gain",
+        juce::NormalisableRange<float> (-15.0f, 15.0f, 0.1f),
+        0.0f));
+
+    layout.add (std::make_unique<juce::AudioParameterBool> (
+        juce::ParameterID { ParamIDs::kSCHSOn, 1 },
+        "SC HS On",
+        false));
+
+    // SC High Cut
+    layout.add (std::make_unique<juce::AudioParameterFloat> (
         juce::ParameterID { ParamIDs::kSCHCFreq, 1 },
         "SC High Cut",
         juce::NormalisableRange<float> (Constants::kMinSCFreq, Constants::kMaxSCFreq, 0.0f, 0.25f),
@@ -181,6 +251,12 @@ juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
         juce::ParameterID { ParamIDs::kSCHCOn, 1 },
         "SC HC On",
         false));
+
+    layout.add (std::make_unique<juce::AudioParameterChoice> (
+        juce::ParameterID { ParamIDs::kSCHCSlope, 1 },
+        "SC HC Slope",
+        ParamIDs::getSCSlopeNames(),
+        1));  // default 12 dB/oct
 
     // ---- Stereo ----
 
@@ -195,6 +271,30 @@ juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
         "Stereo Mode",
         ParamIDs::getStereoModeNames(),
         0));
+
+    // ---- MIDI Trigger / Host Sync ----
+
+    layout.add (std::make_unique<juce::AudioParameterBool> (
+        juce::ParameterID { ParamIDs::kMIDITrigger, 1 },
+        "MIDI Trigger",
+        false));
+
+    layout.add (std::make_unique<juce::AudioParameterBool> (
+        juce::ParameterID { ParamIDs::kHostSync, 1 },
+        "Host Sync",
+        false));
+
+    layout.add (std::make_unique<juce::AudioParameterChoice> (
+        juce::ParameterID { ParamIDs::kSyncDiv, 1 },
+        "Sync Division",
+        ParamIDs::getSyncDivisionNames(),
+        2));  // default 1/4
+
+    layout.add (std::make_unique<juce::AudioParameterChoice> (
+        juce::ParameterID { ParamIDs::kSyncShape, 1 },
+        "Sync Shape",
+        ParamIDs::getSyncShapeNames(),
+        0));  // default Square
 
     // ---- Display/Global ----
 

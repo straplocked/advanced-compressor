@@ -6,6 +6,7 @@
 #include "analyzer/FFTProcessor.h"
 #include "parameters/CompressorParameterAttachment.h"
 #include "presets/PresetManager.h"
+#include "midi/MIDILearnManager.h"
 #include "utils/Constants.h"
 
 class AdvancedCompressorProcessor : public juce::AudioProcessor
@@ -23,7 +24,7 @@ public:
     bool hasEditor() const override { return true; }
 
     const juce::String getName() const override;
-    bool acceptsMidi() const override { return false; }
+    bool acceptsMidi() const override { return true; }
     bool producesMidi() const override { return false; }
     bool isMidiEffect() const override { return false; }
     double getTailLengthSeconds() const override { return 0.0; }
@@ -44,6 +45,7 @@ public:
     PresetManager& getPresetManager()   { return presetManager; }
     CompressorParameterAttachment& getParameterAttachment() { return paramAttachment; }
     juce::UndoManager& getUndoManager() { return undoManager; }
+    MIDILearnManager& getMIDILearnManager() { return midiLearnManager; }
 
     // A/B comparison
     bool isStateA() const { return currentIsA; }
@@ -57,6 +59,7 @@ private:
     PresetManager presetManager;
     CompressorEngine compressorEngine;
     CompressorParameterAttachment paramAttachment;
+    MIDILearnManager midiLearnManager;
 
     FFTProcessor fftProcessorPre;
     FFTProcessor fftProcessorPost;

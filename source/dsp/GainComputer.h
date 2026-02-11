@@ -16,8 +16,11 @@ public:
     }
 
     void setVariableRatio (bool enabled) { variableRatio = enabled; }
+    void setUpwardMode (bool enabled) { upwardMode = enabled; }
 
-    // Returns gain reduction in dB (negative value) for a given input level in dB
+    // Returns gain change in dB:
+    //   Downward mode: negative value (gain reduction)
+    //   Upward mode: positive value (gain boost)
     float computeGainReduction (float inputDB) const
     {
         float effectiveRatio = ratio;
@@ -38,6 +41,9 @@ public:
             }
         }
 
+        if (upwardMode)
+            return CompressorMath::computeUpwardGain (inputDB, threshold, effectiveRatio, knee, range);
+
         return CompressorMath::computeGainReduction (inputDB, threshold, effectiveRatio, knee, range);
     }
 
@@ -51,4 +57,5 @@ private:
     float knee = 6.0f;
     float range = 60.0f;
     bool variableRatio = false;
+    bool upwardMode = false;
 };

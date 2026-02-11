@@ -31,10 +31,22 @@ namespace ParamIDs
     constexpr const char* kSCAudition  = "sc_audition";
     constexpr const char* kSCLCFreq    = "sc_lc_freq";
     constexpr const char* kSCLCOn      = "sc_lc_on";
+    constexpr const char* kSCLCSlope   = "sc_lc_slope";
+    constexpr const char* kSCLSFreq    = "sc_ls_freq";
+    constexpr const char* kSCLSGain    = "sc_ls_gain";
+    constexpr const char* kSCLSOn      = "sc_ls_on";
     constexpr const char* kSCBandFreq  = "sc_band_freq";
     constexpr const char* kSCBandGain  = "sc_band_gain";
+    constexpr const char* kSCBandQ     = "sc_band_q";
+    constexpr const char* kSCBand2Freq = "sc_band2_freq";
+    constexpr const char* kSCBand2Gain = "sc_band2_gain";
+    constexpr const char* kSCBand2Q    = "sc_band2_q";
+    constexpr const char* kSCHSFreq    = "sc_hs_freq";
+    constexpr const char* kSCHSGain    = "sc_hs_gain";
+    constexpr const char* kSCHSOn      = "sc_hs_on";
     constexpr const char* kSCHCFreq    = "sc_hc_freq";
     constexpr const char* kSCHCOn      = "sc_hc_on";
+    constexpr const char* kSCHCSlope   = "sc_hc_slope";
 
     // Stereo
     constexpr const char* kStereoLink  = "stereo_link";
@@ -50,6 +62,12 @@ namespace ParamIDs
     // Auto Threshold
     constexpr const char* kAutoThresh  = "auto_thresh";
 
+    // MIDI Trigger / Host Sync
+    constexpr const char* kMIDITrigger = "midi_trigger";
+    constexpr const char* kHostSync    = "host_sync";
+    constexpr const char* kSyncDiv     = "sync_div";
+    constexpr const char* kSyncShape   = "sync_shape";
+
     // Display/Global
     constexpr const char* kAnalyzerOn  = "analyzer_on";
     constexpr const char* kAnalyzerPre = "analyzer_pre";
@@ -61,7 +79,8 @@ namespace ParamIDs
     inline juce::StringArray getStyleNames()
     {
         return { "Clean", "Classic", "Opto", "Vocal", "Mastering", "Bus",
-                 "Punch", "Pumping", "Versatile", "Smooth", "Op-El", "Vari-Mu" };
+                 "Punch", "Pumping", "Versatile", "Smooth", "Op-El", "Vari-Mu",
+                 "Upward", "TTM" };
     }
 
     inline juce::StringArray getStereoModeNames()
@@ -82,5 +101,21 @@ namespace ParamIDs
     inline juce::StringArray getMeterScaleNames()
     {
         return { "9 dB", "18 dB", "36 dB", "60 dB", "90 dB" };
+    }
+
+    inline juce::StringArray getSCSlopeNames()
+    {
+        return { "6 dB/oct", "12 dB/oct", "24 dB/oct", "48 dB/oct", "96 dB/oct" };
+    }
+
+    inline juce::StringArray getSyncDivisionNames()
+    {
+        return { "1/1", "1/2", "1/4", "1/8", "1/16", "1/32",
+                 "1/4 D", "1/8 D", "1/4 T", "1/8 T" };
+    }
+
+    inline juce::StringArray getSyncShapeNames()
+    {
+        return { "Square", "Triangle", "Sine", "Sawtooth" };
     }
 }

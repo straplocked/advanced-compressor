@@ -39,5 +39,8 @@ private:
     PeakHoldCalculator inputPeakL, inputPeakR;
     PeakHoldCalculator outputPeakL, outputPeakR;
 
+    // Loudness readout
+    juce::Label loudnessLabel;
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (CompressorDisplay)
 };

@@ -2,6 +2,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "../../parameters/CompressorParameterAttachment.h"
+#include "../../dsp/CompressorStyle.h"
 #include "../LookAndFeel/ColourPalette.h"
 #include <deque>
 
@@ -14,12 +15,14 @@ public:
     void resized() override {}
 
     void updateParameters (float threshold, float ratio, float knee, float inputLevelDB);
+    void setStyle (int styleIndex);
 
 private:
     float threshold = -20.0f;
     float ratio = 4.0f;
     float knee = 6.0f;
     float inputLevel = -60.0f;
+    int currentStyle = 0;
 
     // Animated trail of recent operating points
     struct TrailPoint

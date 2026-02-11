@@ -18,6 +18,8 @@ void CompressorEngine::prepare (double sampleRate, int maxBlockSize, int numChan
     for (auto& cp : characterProcessors)
         cp.prepare (sampleRate);
     autoThreshold.prepare (sampleRate);
+    midiTrigger.prepare (sampleRate);
+    hostSyncPulse.prepare (sampleRate);
 
     // Allocate lookahead buffer (max 20ms)
     int maxLookaheadSamples = (int)(0.020 * sampleRate) + 1;
@@ -28,6 +30,8 @@ void CompressorEngine::prepare (double sampleRate, int maxBlockSize, int numChan
     lookaheadSamples = 0;
 
     dryBuffer.setSize (numChannels, maxBlockSize);
+    scEQBuffer.setSize (numChannels, maxBlockSize);
+    triggerBuffer.assign ((size_t) maxBlockSize, 0.0f);
 
     meterData.prepare (sampleRate);
 }
@@ -43,6 +47,8 @@ void CompressorEngine::reset()
     for (auto& cp : characterProcessors)
         cp.reset();
     autoThreshold.reset();
+    midiTrigger.reset();
+    hostSyncPulse.reset();
 
     for (auto& ch : lookaheadBuffer)
         std::fill (ch.begin(), ch.end(), 0.0f);
@@ -75,9 +81,12 @@ void CompressorEngine::updateParameters (const CompressorParameters& params)
 
     for (auto& sc : sidechainEQ)
     {
-        sc.setLowCut (params.scLCFreq, params.scLCOn);
-        sc.setHighCut (params.scHCFreq, params.scHCOn);
-        sc.setBandEQ (params.scBandFreq, params.scBandGain);
+        sc.setLowCut (params.scLCFreq, params.scLCOn, params.scLCSlope);
+        sc.setLowShelf (params.scLSFreq, params.scLSGain, params.scLSOn);
+        sc.setBand1 (params.scBandFreq, params.scBandGain, params.scBandQ);
+        sc.setBand2 (params.scBand2Freq, params.scBand2Gain, params.scBand2Q);
+        sc.setHighShelf (params.scHSFreq, params.scHSGain, params.scHSOn);
+        sc.setHighCut (params.scHCFreq, params.scHCOn, params.scHCSlope);
     }
 
     oversampler.setFactor (params.oversample);
@@ -93,13 +102,36 @@ void CompressorEngine::updateParameters (const CompressorParameters& params)
 
     // Auto threshold
     autoThreshold.setEnabled (params.autoThresh);
+
+    // Host sync
+    hostSyncPulse.setDivision (params.syncDiv);
+    hostSyncPulse.setShape (params.syncShape);
 }
 
 void CompressorEngine::process (juce::AudioBuffer<float>& buffer,
-                                 const juce::AudioBuffer<float>* sidechainBuffer)
+                                 const juce::AudioBuffer<float>* sidechainBuffer,
+                                 const juce::MidiBuffer& midiMessages,
+                                 juce::AudioPlayHead* playHead)
 {
     int numSamples = buffer.getNumSamples();
     int numChannels = buffer.getNumChannels();
+
+    // Generate MIDI trigger / host sync envelopes
+    bool useMIDITrigger = cachedParams.midiTrigger;
+    bool useHostSync = cachedParams.hostSync;
+
+    if (useMIDITrigger)
+    {
+        if ((int) triggerBuffer.size() < numSamples)
+            triggerBuffer.resize ((size_t) numSamples);
+        midiTrigger.processBlock (midiMessages, triggerBuffer.data(), numSamples);
+    }
+    else if (useHostSync)
+    {
+        if ((int) triggerBuffer.size() < numSamples)
+            triggerBuffer.resize ((size_t) numSamples);
+        hostSyncPulse.processBlock (playHead, triggerBuffer.data(), numSamples);
+    }
 
     // Apply input gain + pan
     applyInputGain (buffer);
@@ -156,13 +188,30 @@ void CompressorEngine::process (juce::AudioBuffer<float>& buffer,
     for (int i = 0; i < numSamples; ++i)
     {
         // Get sidechain samples per channel
-        float scL = scSource.getReadPointer (0)[i];
-        float scR = (scSource.getNumChannels() >= 2) ? scSource.getReadPointer (1)[i] : scL;
+        float scL, scR;
+
+        if (useMIDITrigger || useHostSync)
+        {
+            // Use trigger envelope as sidechain signal (amplitude modulation)
+            float trigLevel = triggerBuffer[(size_t) i];
+            scL = trigLevel;
+            scR = trigLevel;
+        }
+        else
+        {
+            scL = scSource.getReadPointer (0)[i];
+            scR = (scSource.getNumChannels() >= 2) ? scSource.getReadPointer (1)[i] : scL;
+        }
 
         // Apply sidechain EQ
         scL = sidechainEQ[0].processSample (scL);
         if (numChannels >= 2)
             scR = sidechainEQ[1].processSample (scR);
+
+        // Store post-EQ sidechain for audition
+        scEQBuffer.setSample (0, i, scL);
+        if (numChannels >= 2)
+            scEQBuffer.setSample (1, i, scR);
 
         // Compute GR per channel
         float grL = cores[0].processSidechain (scL);
@@ -273,15 +322,16 @@ void CompressorEngine::process (juce::AudioBuffer<float>& buffer,
         }
     }
 
-    // SC audition: replace output with sidechain signal
+    // SC audition: replace output with post-EQ sidechain signal,
+    // modulated by GR to hear compression triggering intensity
     if (cachedParams.scAudition)
     {
         for (int ch = 0; ch < numChannels; ++ch)
         {
-            if (ch < scSource.getNumChannels())
-            {
-                buffer.copyFrom (ch, 0, scSource, ch, 0, numSamples);
-            }
+            float* out = buffer.getWritePointer (ch);
+            const float* scEQ = scEQBuffer.getReadPointer (std::min (ch, scEQBuffer.getNumChannels() - 1));
+            for (int i = 0; i < numSamples; ++i)
+                out[i] = scEQ[i];
         }
     }
 

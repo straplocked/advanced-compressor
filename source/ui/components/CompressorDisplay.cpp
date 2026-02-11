@@ -12,6 +12,11 @@ CompressorDisplay::CompressorDisplay (AdvancedCompressorProcessor& p)
     spectrumPre.prepare (Constants::kCurveResolution);
     spectrumPost.prepare (Constants::kCurveResolution);
 
+    loudnessLabel.setFont (10.0f);
+    loudnessLabel.setColour (juce::Label::textColourId, ColourPalette::axisText());
+    loudnessLabel.setJustificationType (juce::Justification::centredRight);
+    addAndMakeVisible (loudnessLabel);
+
     startTimerHz (Constants::kUITimerHz);
 }
 
@@ -63,6 +68,9 @@ void CompressorDisplay::resized()
     auto rightMeter = bounds.removeFromRight (30);
     outputMeter.setBounds (rightMeter.reduced (4));
 
+    // Loudness readout at top right
+    loudnessLabel.setBounds (bounds.getRight() - 190, bounds.getY() + 2, 186, 36);
+
     // Split remaining area: left half = knee, right half = GR display
     auto leftHalf = bounds.removeFromLeft (bounds.getWidth() / 2);
     kneeDisplay.setBounds (leftHalf.reduced (4));
@@ -96,7 +104,20 @@ void CompressorDisplay::timerCallback()
         // Update knee display with current operating point
         auto params = processor.getParameterAttachment().getCurrentParameters();
         float inputDB = std::max (frame->inputL, frame->inputR);
+        kneeDisplay.setStyle (params.style);
         kneeDisplay.updateParameters (params.threshold, params.ratio, params.knee, inputDB);
+
+        // Update loudness readout
+        auto formatLUFS = [] (float lufs) -> juce::String
+        {
+            if (lufs <= -99.0f) return "-inf";
+            return juce::String (lufs, 1);
+        };
+        juce::String loudText;
+        loudText += "M: " + formatLUFS (frame->momentaryLUFS) + " LUFS\n";
+        loudText += "S: " + formatLUFS (frame->shortTermLUFS) + " LUFS\n";
+        loudText += "I: " + formatLUFS (frame->integratedLUFS) + " LUFS";
+        loudnessLabel.setText (loudText, juce::dontSendNotification);
     }
 
     repaint();

@@ -8,6 +8,8 @@
 #include "MidSideProcessor.h"
 #include "CharacterProcessor.h"
 #include "AutoThreshold.h"
+#include "MIDITrigger.h"
+#include "HostSyncPulse.h"
 #include "../parameters/CompressorParameterAttachment.h"
 #include "../metering/LevelMeterData.h"
 #include <vector>
@@ -23,7 +25,9 @@ public:
 
     void updateParameters (const CompressorParameters& params);
     void process (juce::AudioBuffer<float>& buffer,
-                  const juce::AudioBuffer<float>* sidechainBuffer);
+                  const juce::AudioBuffer<float>* sidechainBuffer,
+                  const juce::MidiBuffer& midiMessages,
+                  juce::AudioPlayHead* playHead);
 
     LevelMeterData& getMeterData() { return meterData; }
     float getCurrentGR() const;
@@ -46,6 +50,8 @@ private:
     AutoGainComputer autoGainComputer;
     std::array<CharacterProcessor, 2> characterProcessors;
     AutoThreshold autoThreshold;
+    MIDITrigger midiTrigger;
+    HostSyncPulse hostSyncPulse;
 
     // Lookahead delay line
     std::vector<std::vector<float>> lookaheadBuffer;
@@ -54,6 +60,12 @@ private:
 
     // Dry buffer for mix
     juce::AudioBuffer<float> dryBuffer;
+
+    // Post-SC-EQ sidechain buffer for enhanced audition
+    juce::AudioBuffer<float> scEQBuffer;
+
+    // MIDI trigger / host sync envelope buffer (mono)
+    std::vector<float> triggerBuffer;
 
     // Current parameters (cached)
     CompressorParameters cachedParams;

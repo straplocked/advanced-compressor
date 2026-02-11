@@ -3,6 +3,27 @@
 
 KneeDisplay::KneeDisplay() = default;
 
+void KneeDisplay::setStyle (int styleIndex) { currentStyle = styleIndex; }
+
+// Helper: compute gain change for the current style
+static float computeGainForStyle (float inputDB, float thresh, float rat, float kn, int style)
+{
+    auto behavior = getStyleBehavior (static_cast<CompressorStyle> (style));
+
+    if (behavior.ttm)
+    {
+        // TTM: sum of downward + upward
+        float down = CompressorMath::computeGainReduction (inputDB, thresh, rat, kn, 60.0f);
+        float up = CompressorMath::computeUpwardGain (inputDB, thresh, rat, kn, 60.0f);
+        return down + up;
+    }
+
+    if (behavior.upward)
+        return CompressorMath::computeUpwardGain (inputDB, thresh, rat, kn, 60.0f);
+
+    return CompressorMath::computeGainReduction (inputDB, thresh, rat, kn, 60.0f);
+}
+
 void KneeDisplay::updateParameters (float thresh, float rat, float kn, float inputDB)
 {
     threshold = thresh;
@@ -13,7 +34,7 @@ void KneeDisplay::updateParameters (float thresh, float rat, float kn, float inp
     // Add current operating point to trail
     if (inputDB > displayMinDB)
     {
-        float gr = CompressorMath::computeGainReduction (inputDB, threshold, ratio, knee, 60.0f);
+        float gr = computeGainForStyle (inputDB, threshold, ratio, knee, currentStyle);
         float outputDB = inputDB + gr;
 
         // Age existing points
@@ -83,7 +104,7 @@ void KneeDisplay::paint (juce::Graphics& g)
     bool started = false;
     for (float inputDB = displayMinDB; inputDB <= displayMaxDB; inputDB += 0.5f)
     {
-        float gr = CompressorMath::computeGainReduction (inputDB, threshold, ratio, knee, 60.0f);
+        float gr = computeGainForStyle (inputDB, threshold, ratio, knee, currentStyle);
         float outputDB = inputDB + gr;
 
         float x = bounds.getX() + (inputDB - displayMinDB) / (displayMaxDB - displayMinDB) * w;
@@ -119,7 +140,7 @@ void KneeDisplay::paint (juce::Graphics& g)
     // Current operating point (brightest)
     if (inputLevel > displayMinDB)
     {
-        float gr = CompressorMath::computeGainReduction (inputLevel, threshold, ratio, knee, 60.0f);
+        float gr = computeGainForStyle (inputLevel, threshold, ratio, knee, currentStyle);
         float outputDB = inputLevel + gr;
 
         float opX = bounds.getX() + (inputLevel - displayMinDB) / (displayMaxDB - displayMinDB) * w;

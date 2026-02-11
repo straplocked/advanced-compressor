@@ -31,13 +31,30 @@ struct CompressorParameters
     bool  autoThresh  = false;
     float scLCFreq    = 20.0f;
     bool  scLCOn      = false;
+    int   scLCSlope   = 1;     // 0=6, 1=12, 2=24, 3=48, 4=96 dB/oct
+    float scLSFreq    = 200.0f;
+    float scLSGain    = 0.0f;
+    bool  scLSOn      = false;
     float scBandFreq  = 1000.0f;
     float scBandGain  = 0.0f;
+    float scBandQ     = 1.0f;
+    float scBand2Freq = 3000.0f;
+    float scBand2Gain = 0.0f;
+    float scBand2Q    = 1.0f;
+    float scHSFreq    = 8000.0f;
+    float scHSGain    = 0.0f;
+    bool  scHSOn      = false;
     float scHCFreq    = 20000.0f;
     bool  scHCOn      = false;
+    int   scHCSlope   = 1;
 
     float stereoLink  = 100.0f;
     int   stereoMode  = 0;
+
+    bool  midiTrigger = false;
+    bool  hostSync    = false;
+    int   syncDiv     = 2;   // default 1/4
+    int   syncShape   = 0;   // default Square
 
     bool  analyzerOn  = true;
     bool  analyzerPre = false;
@@ -79,13 +96,30 @@ public:
         rawAutoThresh  = apvts.getRawParameterValue (ParamIDs::kAutoThresh);
         rawSCLCFreq    = apvts.getRawParameterValue (ParamIDs::kSCLCFreq);
         rawSCLCOn      = apvts.getRawParameterValue (ParamIDs::kSCLCOn);
+        rawSCLCSlope   = apvts.getRawParameterValue (ParamIDs::kSCLCSlope);
+        rawSCLSFreq    = apvts.getRawParameterValue (ParamIDs::kSCLSFreq);
+        rawSCLSGain    = apvts.getRawParameterValue (ParamIDs::kSCLSGain);
+        rawSCLSOn      = apvts.getRawParameterValue (ParamIDs::kSCLSOn);
         rawSCBandFreq  = apvts.getRawParameterValue (ParamIDs::kSCBandFreq);
         rawSCBandGain  = apvts.getRawParameterValue (ParamIDs::kSCBandGain);
+        rawSCBandQ     = apvts.getRawParameterValue (ParamIDs::kSCBandQ);
+        rawSCBand2Freq = apvts.getRawParameterValue (ParamIDs::kSCBand2Freq);
+        rawSCBand2Gain = apvts.getRawParameterValue (ParamIDs::kSCBand2Gain);
+        rawSCBand2Q    = apvts.getRawParameterValue (ParamIDs::kSCBand2Q);
+        rawSCHSFreq    = apvts.getRawParameterValue (ParamIDs::kSCHSFreq);
+        rawSCHSGain    = apvts.getRawParameterValue (ParamIDs::kSCHSGain);
+        rawSCHSOn      = apvts.getRawParameterValue (ParamIDs::kSCHSOn);
         rawSCHCFreq    = apvts.getRawParameterValue (ParamIDs::kSCHCFreq);
         rawSCHCOn      = apvts.getRawParameterValue (ParamIDs::kSCHCOn);
+        rawSCHCSlope   = apvts.getRawParameterValue (ParamIDs::kSCHCSlope);
 
         rawStereoLink  = apvts.getRawParameterValue (ParamIDs::kStereoLink);
         rawStereoMode  = apvts.getRawParameterValue (ParamIDs::kStereoMode);
+
+        rawMIDITrigger = apvts.getRawParameterValue (ParamIDs::kMIDITrigger);
+        rawHostSync    = apvts.getRawParameterValue (ParamIDs::kHostSync);
+        rawSyncDiv     = apvts.getRawParameterValue (ParamIDs::kSyncDiv);
+        rawSyncShape   = apvts.getRawParameterValue (ParamIDs::kSyncShape);
 
         rawAnalyzerOn  = apvts.getRawParameterValue (ParamIDs::kAnalyzerOn);
         rawAnalyzerPre = apvts.getRawParameterValue (ParamIDs::kAnalyzerPre);
@@ -123,13 +157,30 @@ public:
         p.autoThresh  = rawAutoThresh->load() >= 0.5f;
         p.scLCFreq    = rawSCLCFreq->load();
         p.scLCOn      = rawSCLCOn->load() >= 0.5f;
+        p.scLCSlope   = (int) rawSCLCSlope->load();
+        p.scLSFreq    = rawSCLSFreq->load();
+        p.scLSGain    = rawSCLSGain->load();
+        p.scLSOn      = rawSCLSOn->load() >= 0.5f;
         p.scBandFreq  = rawSCBandFreq->load();
         p.scBandGain  = rawSCBandGain->load();
+        p.scBandQ     = rawSCBandQ->load();
+        p.scBand2Freq = rawSCBand2Freq->load();
+        p.scBand2Gain = rawSCBand2Gain->load();
+        p.scBand2Q    = rawSCBand2Q->load();
+        p.scHSFreq    = rawSCHSFreq->load();
+        p.scHSGain    = rawSCHSGain->load();
+        p.scHSOn      = rawSCHSOn->load() >= 0.5f;
         p.scHCFreq    = rawSCHCFreq->load();
         p.scHCOn      = rawSCHCOn->load() >= 0.5f;
+        p.scHCSlope   = (int) rawSCHCSlope->load();
 
         p.stereoLink  = rawStereoLink->load();
         p.stereoMode  = (int) rawStereoMode->load();
+
+        p.midiTrigger = rawMIDITrigger->load() >= 0.5f;
+        p.hostSync    = rawHostSync->load() >= 0.5f;
+        p.syncDiv     = (int) rawSyncDiv->load();
+        p.syncShape   = (int) rawSyncShape->load();
 
         p.analyzerOn  = rawAnalyzerOn->load() >= 0.5f;
         p.analyzerPre = rawAnalyzerPre->load() >= 0.5f;
@@ -166,13 +217,30 @@ private:
     std::atomic<float>* rawAutoThresh  = nullptr;
     std::atomic<float>* rawSCLCFreq    = nullptr;
     std::atomic<float>* rawSCLCOn      = nullptr;
+    std::atomic<float>* rawSCLCSlope   = nullptr;
+    std::atomic<float>* rawSCLSFreq    = nullptr;
+    std::atomic<float>* rawSCLSGain    = nullptr;
+    std::atomic<float>* rawSCLSOn      = nullptr;
     std::atomic<float>* rawSCBandFreq  = nullptr;
     std::atomic<float>* rawSCBandGain  = nullptr;
+    std::atomic<float>* rawSCBandQ     = nullptr;
+    std::atomic<float>* rawSCBand2Freq = nullptr;
+    std::atomic<float>* rawSCBand2Gain = nullptr;
+    std::atomic<float>* rawSCBand2Q    = nullptr;
+    std::atomic<float>* rawSCHSFreq    = nullptr;
+    std::atomic<float>* rawSCHSGain    = nullptr;
+    std::atomic<float>* rawSCHSOn      = nullptr;
     std::atomic<float>* rawSCHCFreq    = nullptr;
     std::atomic<float>* rawSCHCOn      = nullptr;
+    std::atomic<float>* rawSCHCSlope   = nullptr;
 
     std::atomic<float>* rawStereoLink  = nullptr;
     std::atomic<float>* rawStereoMode  = nullptr;
+
+    std::atomic<float>* rawMIDITrigger = nullptr;
+    std::atomic<float>* rawHostSync    = nullptr;
+    std::atomic<float>* rawSyncDiv     = nullptr;
+    std::atomic<float>* rawSyncShape   = nullptr;
 
     std::atomic<float>* rawAnalyzerOn  = nullptr;
     std::atomic<float>* rawAnalyzerPre = nullptr;

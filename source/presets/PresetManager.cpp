@@ -6,6 +6,7 @@
 PresetManager::PresetManager (juce::AudioProcessorValueTreeState& vts)
     : apvts (vts)
 {
+    loadFavorites();
     rebuildPresetList();
 }
 
@@ -14,6 +15,13 @@ void PresetManager::rebuildPresetList()
     allPresets = FactoryPresets::getAll();
     auto userPresets = loadUserPresetsFromDisk();
     allPresets.insert (allPresets.end(), userPresets.begin(), userPresets.end());
+
+    // Mark favorites
+    for (auto& preset : allPresets)
+    {
+        preset.isFavorite = std::find (favoriteNames.begin(), favoriteNames.end(),
+                                        preset.name) != favoriteNames.end();
+    }
 }
 
 std::vector<Preset> PresetManager::loadUserPresetsFromDisk() const
@@ -109,10 +117,24 @@ void PresetManager::resetToDefaults()
     setParam (ParamIDs::kAttack, Constants::kDefaultAttack);
     setParam (ParamIDs::kRelease, Constants::kDefaultRelease);
     setParam (ParamIDs::kHold, Constants::kDefaultHold);
-    setParam (ParamIDs::kMix, 100.0f);
+    setParam (ParamIDs::kLookahead, Constants::kDefaultLookahead);
+    setParam (ParamIDs::kInputGain, 0.0f);
     setParam (ParamIDs::kOutputGain, 0.0f);
     setParam (ParamIDs::kWetGain, 0.0f);
-    setParam (ParamIDs::kInputGain, 0.0f);
+    setParam (ParamIDs::kMix, 100.0f);
+    setParam (ParamIDs::kCharDrive, 0.0f);
+    setParam (ParamIDs::kStereoLink, 100.0f);
+
+    if (auto* p = apvts.getParameter (ParamIDs::kCompStyle))
+        p->setValueNotifyingHost (p->convertTo0to1 (0.0f));
+    if (auto* p = apvts.getParameter (ParamIDs::kCharMode))
+        p->setValueNotifyingHost (p->convertTo0to1 (0.0f));
+    if (auto* p = apvts.getParameter (ParamIDs::kStereoMode))
+        p->setValueNotifyingHost (p->convertTo0to1 (0.0f));
+    if (auto* p = apvts.getParameter (ParamIDs::kAutoGain))
+        p->setValueNotifyingHost (0.0f);
+    if (auto* p = apvts.getParameter (ParamIDs::kAutoThresh))
+        p->setValueNotifyingHost (0.0f);
 }
 
 void PresetManager::applyPresetData (const CompressorPresetData& data)
@@ -130,12 +152,24 @@ void PresetManager::applyPresetData (const CompressorPresetData& data)
     setParam (ParamIDs::kAttack, data.attackMs);
     setParam (ParamIDs::kRelease, data.releaseMs);
     setParam (ParamIDs::kHold, data.holdMs);
+    setParam (ParamIDs::kLookahead, data.lookaheadMs);
+    setParam (ParamIDs::kInputGain, data.inputGain);
+    setParam (ParamIDs::kOutputGain, data.outputGain);
+    setParam (ParamIDs::kWetGain, data.wetGain);
+    setParam (ParamIDs::kMix, data.mix);
+    setParam (ParamIDs::kCharDrive, data.charDrive);
+    setParam (ParamIDs::kStereoLink, data.stereoLink);
 
     if (auto* p = apvts.getParameter (ParamIDs::kCompStyle))
         p->setValueNotifyingHost (p->convertTo0to1 ((float) data.style));
-
-    setParam (ParamIDs::kMix, data.mix);
-    setParam (ParamIDs::kOutputGain, data.outputGain);
+    if (auto* p = apvts.getParameter (ParamIDs::kCharMode))
+        p->setValueNotifyingHost (p->convertTo0to1 ((float) data.charMode));
+    if (auto* p = apvts.getParameter (ParamIDs::kStereoMode))
+        p->setValueNotifyingHost (p->convertTo0to1 ((float) data.stereoMode));
+    if (auto* p = apvts.getParameter (ParamIDs::kAutoGain))
+        p->setValueNotifyingHost (data.autoGain ? 1.0f : 0.0f);
+    if (auto* p = apvts.getParameter (ParamIDs::kAutoThresh))
+        p->setValueNotifyingHost (data.autoThresh ? 1.0f : 0.0f);
 }
 
 bool PresetManager::saveCurrentAsPreset (const juce::String& name)
@@ -226,4 +260,87 @@ juce::String PresetManager::getCurrentPresetName() const
 void PresetManager::notifyListeners()
 {
     listeners.call ([] (Listener& l) { l.presetChanged(); });
+}
+
+// --- Enhanced browser features ---
+
+void PresetManager::toggleFavorite (int presetIndex)
+{
+    if (presetIndex < 0 || presetIndex >= (int) allPresets.size()) return;
+
+    auto& preset = allPresets[(size_t) presetIndex];
+    preset.isFavorite = ! preset.isFavorite;
+
+    if (preset.isFavorite)
+        favoriteNames.push_back (preset.name);
+    else
+        favoriteNames.erase (std::remove (favoriteNames.begin(), favoriteNames.end(), preset.name),
+                              favoriteNames.end());
+
+    saveFavorites();
+}
+
+bool PresetManager::isFavorite (int presetIndex) const
+{
+    if (presetIndex < 0 || presetIndex >= (int) allPresets.size()) return false;
+    return allPresets[(size_t) presetIndex].isFavorite;
+}
+
+std::vector<int> PresetManager::searchPresets (const juce::String& query) const
+{
+    std::vector<int> results;
+    auto lowerQuery = query.toLowerCase();
+
+    for (int i = 0; i < (int) allPresets.size(); ++i)
+    {
+        if (allPresets[(size_t) i].name.toLowerCase().contains (lowerQuery)
+            || allPresets[(size_t) i].category.toLowerCase().contains (lowerQuery))
+        {
+            results.push_back (i);
+        }
+    }
+    return results;
+}
+
+std::vector<int> PresetManager::getFavoriteIndices() const
+{
+    std::vector<int> indices;
+    for (int i = 0; i < (int) allPresets.size(); ++i)
+        if (allPresets[(size_t) i].isFavorite)
+            indices.push_back (i);
+    return indices;
+}
+
+juce::File PresetManager::getFavoritesFile() const
+{
+    return getUserPresetsDirectory().getChildFile (".favorites");
+}
+
+void PresetManager::loadFavorites()
+{
+    favoriteNames.clear();
+    auto file = getFavoritesFile();
+    if (! file.existsAsFile()) return;
+
+    auto lines = file.loadFileAsString();
+    juce::StringArray names;
+    names.addTokens (lines, "\n", "");
+    for (auto& n : names)
+    {
+        auto trimmed = n.trim();
+        if (trimmed.isNotEmpty())
+            favoriteNames.push_back (trimmed);
+    }
+}
+
+void PresetManager::saveFavorites() const
+{
+    auto file = getFavoritesFile();
+    file.getParentDirectory().createDirectory();
+
+    juce::String content;
+    for (auto& name : favoriteNames)
+        content += name + "\n";
+
+    file.replaceWithText (content);
 }

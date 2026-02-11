@@ -20,8 +20,8 @@ namespace CompressorMath
         return (int) std::round (ms * 0.001 * sampleRate);
     }
 
-    // Soft-knee gain computation
-    // Returns gain reduction in dB for a given input level (dB)
+    // Soft-knee gain computation (downward compression)
+    // Returns gain reduction in dB (negative value) for a given input level (dB)
     inline float computeGainReduction (float inputDB, float threshold, float ratio,
                                        float kneeWidth, float range)
     {
@@ -51,5 +51,38 @@ namespace CompressorMath
         gainReductionDB = std::min (gainReductionDB, range);
 
         return -gainReductionDB;
+    }
+
+    // Upward compression: boosts signals below threshold
+    // Returns gain boost in dB (positive value) for a given input level (dB)
+    inline float computeUpwardGain (float inputDB, float threshold, float ratio,
+                                     float kneeWidth, float range)
+    {
+        float halfKnee = kneeWidth * 0.5f;
+
+        float boostDB;
+
+        if (inputDB >= threshold + halfKnee)
+        {
+            // Above knee: no upward compression
+            boostDB = 0.0f;
+        }
+        else if (inputDB <= threshold - halfKnee)
+        {
+            // Below knee: full upward compression
+            float deficit = threshold - inputDB;
+            boostDB = deficit * (1.0f - 1.0f / ratio);
+        }
+        else
+        {
+            // In knee: quadratic transition
+            float x = threshold + halfKnee - inputDB;
+            boostDB = (1.0f - 1.0f / ratio) * x * x / (2.0f * kneeWidth);
+        }
+
+        // Apply range limit (max boost)
+        boostDB = std::min (boostDB, range);
+
+        return boostDB;
     }
 }

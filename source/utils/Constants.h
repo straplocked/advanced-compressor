@@ -77,5 +77,5 @@ namespace Constants
     constexpr float kMaxLookaheadMs = 20.0f;
 
     // Number of compressor styles
-    constexpr int kNumStyles = 12;
+    constexpr int kNumStyles = 14;
 }

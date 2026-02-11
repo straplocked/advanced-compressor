@@ -25,6 +25,12 @@ public:
     void rescanUserPresets();
     juce::File getUserPresetsDirectory() const;
 
+    // Enhanced browser features
+    void toggleFavorite (int presetIndex);
+    bool isFavorite (int presetIndex) const;
+    std::vector<int> searchPresets (const juce::String& query) const;
+    std::vector<int> getFavoriteIndices() const;
+
     struct Listener
     {
         virtual ~Listener() = default;
@@ -47,4 +53,9 @@ private:
     void applyPresetData (const CompressorPresetData& data);
     void applyUserPresetFromFile (const juce::File& file);
     void notifyListeners();
+
+    juce::File getFavoritesFile() const;
+    void loadFavorites();
+    void saveFavorites() const;
+    std::vector<juce::String> favoriteNames;
 };

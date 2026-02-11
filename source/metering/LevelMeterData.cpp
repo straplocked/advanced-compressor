@@ -6,12 +6,14 @@ void LevelMeterData::prepare (double sampleRate)
 {
     currentSampleRate = sampleRate;
     meterBuffer.resize (1);
+    loudnessMeter.prepare (sampleRate, 2);
     reset();
 }
 
 void LevelMeterData::reset()
 {
     currentFrame = {};
+    loudnessMeter.reset();
 }
 
 void LevelMeterData::pushInputLevel (const juce::AudioBuffer<float>& buffer)
@@ -32,6 +34,16 @@ void LevelMeterData::pushOutputLevel (const juce::AudioBuffer<float>& buffer)
         currentFrame.outputR = computePeakDB (buffer.getReadPointer (1), numSamples);
     else
         currentFrame.outputR = currentFrame.outputL;
+
+    // Feed loudness meter
+    int numCh = buffer.getNumChannels();
+    const float* channelPtrs[2] = { buffer.getReadPointer (0),
+                                     numCh >= 2 ? buffer.getReadPointer (1) : buffer.getReadPointer (0) };
+    loudnessMeter.pushBlock (channelPtrs, std::min (numCh, 2), numSamples);
+
+    currentFrame.momentaryLUFS = (float) loudnessMeter.getMomentaryLUFS();
+    currentFrame.shortTermLUFS = (float) loudnessMeter.getShortTermLUFS();
+    currentFrame.integratedLUFS = (float) loudnessMeter.getIntegratedLUFS();
 
     publishFrame();
 }

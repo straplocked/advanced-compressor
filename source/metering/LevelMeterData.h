@@ -3,6 +3,7 @@
 #include <juce_audio_basics/juce_audio_basics.h>
 #include "../analyzer/TripleBuffer.h"
 #include "../utils/Constants.h"
+#include "LoudnessMeter.h"
 #include <array>
 #include <atomic>
 
@@ -14,6 +15,9 @@ struct MeterFrame
     float outputR = Constants::kMeterMinDB;
     float grL = 0.0f;
     float grR = 0.0f;
+    float momentaryLUFS = -100.0f;
+    float shortTermLUFS = -100.0f;
+    float integratedLUFS = -100.0f;
 };
 
 class LevelMeterData
@@ -36,5 +40,6 @@ private:
 
     TripleBuffer<MeterFrame> meterBuffer;
     MeterFrame currentFrame;
+    LoudnessMeter loudnessMeter;
     double currentSampleRate = 44100.0;
 };

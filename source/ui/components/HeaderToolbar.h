@@ -32,9 +32,11 @@ private:
     juce::TextButton deltaButton { "Delta" };
     juce::TextButton abButton { "A" };
     juce::TextButton copyABButton { "A>B" };
+    juce::TextButton midiLearnButton { "MIDI" };
 
     juce::ComboBox styleSelector;
     juce::ComboBox oversampleSelector;
+    juce::ComboBox scaleSelector;
     juce::TextButton analyzerButton { "Analyzer" };
     juce::Slider outputGainSlider;
     juce::Label outputGainLabel;
