@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.25)
 
+# Platform defaults (must be before project() for deployment target to take effect)
+include(cmake/PlatformDefaults.cmake)
+
 set(ADVANCED_COMPRESSOR_VERSION_MAJOR 0)
 set(ADVANCED_COMPRESSOR_VERSION_MINOR 1)
 set(ADVANCED_COMPRESSOR_VERSION_PATCH 0)
@@ -13,9 +16,6 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
-# Platform defaults
-include(cmake/PlatformDefaults.cmake)
 
 # JUCE
 add_subdirectory(JUCE)
