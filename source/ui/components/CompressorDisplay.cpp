@@ -11,6 +11,7 @@
 
 #include "CompressorDisplay.h"
 #include "../../PluginProcessor.h"
+#include "../LookAndFeel/Fonts.h"
 
 CompressorDisplay::CompressorDisplay (AdvancedCompressorProcessor& p)
     : processor (p)
@@ -28,7 +29,7 @@ CompressorDisplay::CompressorDisplay (AdvancedCompressorProcessor& p)
     spectrumPre.prepare (Constants::kCurveResolution);
     spectrumPost.prepare (Constants::kCurveResolution);
 
-    loudnessLabel.setFont (10.0f);
+    loudnessLabel.setFont (Fonts::getBody (11.0f));
     loudnessLabel.setColour (juce::Label::textColourId, ColourPalette::axisText());
     loudnessLabel.setJustificationType (juce::Justification::centredRight);
     addAndMakeVisible (loudnessLabel);
@@ -49,10 +50,8 @@ void CompressorDisplay::paint (juce::Graphics& g)
     g.setColour (ColourPalette::curveArea());
     g.fillRect (bounds);
 
-    // Spectrum backdrop
-    auto specBounds = bounds.reduced (40.0f, 0.0f);
-    float specW = specBounds.getWidth();
-    float specH = specBounds.getHeight();
+    // Spectrum backdrop (within knee display area, excluding right meter cluster)
+    auto specBounds = bounds.withTrimmedRight (80.0f).reduced (4.0f, 0.0f);
 
     g.saveState();
     g.setOrigin ((int) specBounds.getX(), (int) specBounds.getY());
@@ -78,25 +77,29 @@ void CompressorDisplay::resized()
 {
     auto bounds = getLocalBounds();
 
-    auto leftMeter = bounds.removeFromLeft (30);
-    inputMeter.setBounds (leftMeter.reduced (4));
+    // Right-side meter cluster (Pro-C 3 style): GR | IN | OUT
+    auto meterArea = bounds.removeFromRight (80);
 
-    auto rightMeter = bounds.removeFromRight (30);
-    outputMeter.setBounds (rightMeter.reduced (4));
+    // Loudness readout at the top of the meter area
+    loudnessLabel.setBounds (meterArea.removeFromTop (40).reduced (2, 2));
 
-    // Loudness readout at top right
-    loudnessLabel.setBounds (bounds.getRight() - 190, bounds.getY() + 2, 186, 36);
+    // Meter bars fill the remaining height
+    auto grArea = meterArea.removeFromLeft (24);
+    grDisplay.setBounds (grArea.reduced (2));
 
-    // Split remaining area: left half = knee, right half = GR display
-    auto leftHalf = bounds.removeFromLeft (bounds.getWidth() / 2);
-    kneeDisplay.setBounds (leftHalf.reduced (4));
-    grDisplay.setBounds (bounds.reduced (4));
+    auto inArea = meterArea.removeFromLeft (26);
+    inputMeter.setBounds (inArea.reduced (2));
+
+    outputMeter.setBounds (meterArea.reduced (2));
+
+    // Knee display fills the entire main area
+    kneeDisplay.setBounds (bounds.reduced (4));
 }
 
 void CompressorDisplay::timerCallback()
 {
-    // Update spectrum
-    auto specBounds = getLocalBounds().reduced (40, 0);
+    // Update spectrum (same area as paint)
+    auto specBounds = getLocalBounds().withTrimmedRight (80).reduced (4, 0);
     float specW = (float) specBounds.getWidth();
     float specH = (float) specBounds.getHeight();
 

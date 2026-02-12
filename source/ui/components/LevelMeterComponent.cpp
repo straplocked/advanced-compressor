@@ -10,6 +10,7 @@
  */
 
 #include "LevelMeterComponent.h"
+#include "../LookAndFeel/Fonts.h"
 
 LevelMeterComponent::LevelMeterComponent() = default;
 
@@ -41,7 +42,7 @@ void LevelMeterComponent::paint (juce::Graphics& g)
     if (meterLabel.isNotEmpty())
     {
         g.setColour (ColourPalette::axisText());
-        g.setFont (9.0f);
+        g.setFont (Fonts::getBody (10.0f));
         g.drawText (meterLabel, bounds.removeFromTop (labelHeight),
                     juce::Justification::centred, false);
     }

@@ -11,17 +11,18 @@
 
 #include "SidechainPanel.h"
 #include "../LookAndFeel/ColourPalette.h"
+#include "../LookAndFeel/Fonts.h"
 
 SidechainPanel::SidechainPanel (juce::AudioProcessorValueTreeState& apvts)
 {
     auto setupSlider = [this] (juce::Slider& slider, juce::Label& label, const juce::String& text)
     {
         slider.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
-        slider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 50, 14);
+        slider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 50, 13);
         addAndMakeVisible (slider);
         label.setText (text, juce::dontSendNotification);
         label.setJustificationType (juce::Justification::centred);
-        label.setFont (9.0f);
+        label.setFont (Fonts::getBody (10.0f));
         label.setColour (juce::Label::textColourId, ColourPalette::axisText());
         addAndMakeVisible (label);
     };
@@ -41,34 +42,52 @@ SidechainPanel::SidechainPanel (juce::AudioProcessorValueTreeState& apvts)
     };
 
     // Band 1: Low Cut
-    setupSlider (lcFreqSlider, lcLabel, "Freq");
+    setupSlider (lcFreqSlider, lcFreqLabel, "Freq");
     setupToggle (lcOnButton);
     setupCombo (lcSlopeBox);
+    lcOnButton.setComponentID ("sc.lcOn");
+    lcFreqSlider.setComponentID ("sc.lcFreq");
+    lcSlopeBox.setComponentID ("sc.lcSlope");
 
     // Band 2: Low Shelf
     setupSlider (lsFreqSlider, lsFreqLabel, "Freq");
     setupSlider (lsGainSlider, lsGainLabel, "Gain");
     setupToggle (lsOnButton);
+    lsOnButton.setComponentID ("sc.lsOn");
+    lsFreqSlider.setComponentID ("sc.lsFreq");
+    lsGainSlider.setComponentID ("sc.lsGain");
 
     // Band 3: Bell 1
     setupSlider (band1FreqSlider, band1FreqLabel, "Freq");
     setupSlider (band1GainSlider, band1GainLabel, "Gain");
     setupSlider (band1QSlider, band1QLabel, "Q");
+    band1FreqSlider.setComponentID ("sc.b1Freq");
+    band1GainSlider.setComponentID ("sc.b1Gain");
+    band1QSlider.setComponentID ("sc.b1Q");
 
     // Band 4: Bell 2
     setupSlider (band2FreqSlider, band2FreqLabel, "Freq");
     setupSlider (band2GainSlider, band2GainLabel, "Gain");
     setupSlider (band2QSlider, band2QLabel, "Q");
+    band2FreqSlider.setComponentID ("sc.b2Freq");
+    band2GainSlider.setComponentID ("sc.b2Gain");
+    band2QSlider.setComponentID ("sc.b2Q");
 
     // Band 5: High Shelf
     setupSlider (hsFreqSlider, hsFreqLabel, "Freq");
     setupSlider (hsGainSlider, hsGainLabel, "Gain");
     setupToggle (hsOnButton);
+    hsOnButton.setComponentID ("sc.hsOn");
+    hsFreqSlider.setComponentID ("sc.hsFreq");
+    hsGainSlider.setComponentID ("sc.hsGain");
 
     // Band 6: High Cut
-    setupSlider (hcFreqSlider, hcLabel, "Freq");
+    setupSlider (hcFreqSlider, hcFreqLabel, "Freq");
     setupToggle (hcOnButton);
     setupCombo (hcSlopeBox);
+    hcOnButton.setComponentID ("sc.hcOn");
+    hcFreqSlider.setComponentID ("sc.hcFreq");
+    hcSlopeBox.setComponentID ("sc.hcSlope");
 
     // Attachments
     lcFreqAttach  = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (apvts, ParamIDs::kSCLCFreq, lcFreqSlider);
@@ -98,140 +117,147 @@ SidechainPanel::SidechainPanel (juce::AudioProcessorValueTreeState& apvts)
 
 SidechainPanel::~SidechainPanel()
 {
-    lcFreqAttach.reset();
-    lcOnAttach.reset();
-    lcSlopeAttach.reset();
-    lsFreqAttach.reset();
-    lsGainAttach.reset();
-    lsOnAttach.reset();
-    band1FreqAttach.reset();
-    band1GainAttach.reset();
-    band1QAttach.reset();
-    band2FreqAttach.reset();
-    band2GainAttach.reset();
-    band2QAttach.reset();
-    hsFreqAttach.reset();
-    hsGainAttach.reset();
-    hsOnAttach.reset();
-    hcFreqAttach.reset();
-    hcOnAttach.reset();
-    hcSlopeAttach.reset();
+    lcFreqAttach.reset(); lcOnAttach.reset(); lcSlopeAttach.reset();
+    lsFreqAttach.reset(); lsGainAttach.reset(); lsOnAttach.reset();
+    band1FreqAttach.reset(); band1GainAttach.reset(); band1QAttach.reset();
+    band2FreqAttach.reset(); band2GainAttach.reset(); band2QAttach.reset();
+    hsFreqAttach.reset(); hsGainAttach.reset(); hsOnAttach.reset();
+    hcFreqAttach.reset(); hcOnAttach.reset(); hcSlopeAttach.reset();
 }
 
 void SidechainPanel::paint (juce::Graphics& g)
 {
-    g.setColour (ColourPalette::gridLine().withAlpha (0.3f));
-    g.drawVerticalLine (0, 0.0f, (float) getHeight());
+    auto bounds = getLocalBounds().toFloat();
 
-    g.setFont (10.0f);
+    // Background
+    juce::ColourGradient grad (ColourPalette::panelTop().brighter (0.02f), 0, bounds.getY(),
+                               ColourPalette::panelBottom(), 0, bounds.getBottom(), false);
+    g.setGradientFill (grad);
+    g.fillRect (bounds);
+
+    // Top bevel
+    g.setColour (ColourPalette::bevelLight().withAlpha (0.3f));
+    g.drawLine (0.0f, bounds.getY() + 0.5f, bounds.getRight(), bounds.getY() + 0.5f, 1.0f);
+
+    // Band separator lines
+    int numBands = 6;
+    float bandW = bounds.getWidth() / (float) numBands;
+    g.setColour (ColourPalette::gridLine().withAlpha (0.4f));
+    for (int i = 1; i < numBands; ++i)
+    {
+        float x = bandW * (float) i;
+        g.drawLine (x, bounds.getY() + 4.0f, x, bounds.getBottom() - 4.0f, 0.5f);
+    }
+
+    // Band title labels
+    g.setFont (Fonts::getBold (10.0f));
     g.setColour (ColourPalette::axisText());
-    g.drawText ("SC EQ (6-Band)", getLocalBounds().removeFromTop (14), juce::Justification::centred);
+    const char* titles[] = { "LC", "LS", "BELL 1", "BELL 2", "HS", "HC" };
+    for (int i = 0; i < numBands; ++i)
+    {
+        auto labelBounds = juce::Rectangle<float> (bandW * (float) i, 2.0f, bandW, 12.0f);
+        g.drawText (titles[i], labelBounds, juce::Justification::centred);
+    }
 }
 
 void SidechainPanel::resized()
 {
-    auto bounds = getLocalBounds().reduced (2);
-    bounds.removeFromTop (16);
-
+    auto bounds = getLocalBounds();
+    int numBands = 6;
+    int bandW = bounds.getWidth() / numBands;
     int knobSize = 36;
-    int labelH = 11;
-    int btnH = 14;
-    int slopeH = 16;
-    int colW = 38;
+    int labelH = 12;
+    int btnH = 16;
+    int comboH = 18;
+    int topPad = 16;
 
-    // Row 1: LC, LS, Band1 (top half)
-    auto row1 = bounds.removeFromTop (knobSize + labelH + btnH + 2);
+    auto layoutBand = [&] (int bandIndex) -> juce::Rectangle<int>
+    {
+        return juce::Rectangle<int> (bandIndex * bandW, topPad,
+                                      bandW, bounds.getHeight() - topPad).reduced (4, 2);
+    };
 
-    // Low Cut column
-    auto lcCol = row1.removeFromLeft (colW);
-    lcOnButton.setBounds (lcCol.removeFromTop (btnH).withSizeKeepingCentre (30, btnH));
-    lcFreqSlider.setBounds (lcCol.removeFromTop (knobSize));
-    lcLabel.setBounds (lcCol.removeFromTop (labelH));
-    row1.removeFromLeft (1);
+    // Band 1: LC — [On] [Freq] [Slope]
+    {
+        auto b = layoutBand (0);
+        lcOnButton.setBounds (b.removeFromTop (btnH).withSizeKeepingCentre (32, btnH));
+        b.removeFromTop (2);
+        lcFreqSlider.setBounds (b.removeFromTop (knobSize).withSizeKeepingCentre (knobSize, knobSize));
+        lcFreqLabel.setBounds (b.removeFromTop (labelH));
+        b.removeFromTop (2);
+        lcSlopeBox.setBounds (b.removeFromTop (comboH).reduced (4, 0));
+    }
 
-    // LC slope (narrow dropdown)
-    auto lcSlopeCol = row1.removeFromLeft (colW + 8);
-    lcSlopeCol.removeFromTop (btnH);
-    lcSlopeBox.setBounds (lcSlopeCol.removeFromTop (slopeH).withSizeKeepingCentre (44, slopeH));
-    row1.removeFromLeft (2);
+    // Band 2: LS — [On] [Freq] [Gain]
+    {
+        auto b = layoutBand (1);
+        lsOnButton.setBounds (b.removeFromTop (btnH).withSizeKeepingCentre (32, btnH));
+        b.removeFromTop (2);
+        auto knobRow = b.removeFromTop (knobSize);
+        int halfW = knobRow.getWidth() / 2;
+        lsFreqSlider.setBounds (knobRow.removeFromLeft (halfW).withSizeKeepingCentre (knobSize, knobSize));
+        lsGainSlider.setBounds (knobRow.withSizeKeepingCentre (knobSize, knobSize));
+        auto labelRow = b.removeFromTop (labelH);
+        halfW = labelRow.getWidth() / 2;
+        lsFreqLabel.setBounds (labelRow.removeFromLeft (halfW));
+        lsGainLabel.setBounds (labelRow);
+    }
 
-    // Low Shelf columns
-    auto lsCol1 = row1.removeFromLeft (colW);
-    lsOnButton.setBounds (lsCol1.removeFromTop (btnH).withSizeKeepingCentre (30, btnH));
-    lsFreqSlider.setBounds (lsCol1.removeFromTop (knobSize));
-    lsFreqLabel.setBounds (lsCol1.removeFromTop (labelH));
-    row1.removeFromLeft (1);
+    // Band 3: Bell 1 — [Freq] [Gain] [Q]
+    {
+        auto b = layoutBand (2);
+        b.removeFromTop (btnH + 2);
+        auto knobRow = b.removeFromTop (knobSize);
+        int thirdW = knobRow.getWidth() / 3;
+        band1FreqSlider.setBounds (knobRow.removeFromLeft (thirdW).withSizeKeepingCentre (knobSize, knobSize));
+        band1GainSlider.setBounds (knobRow.removeFromLeft (thirdW).withSizeKeepingCentre (knobSize, knobSize));
+        band1QSlider.setBounds (knobRow.withSizeKeepingCentre (knobSize, knobSize));
+        auto labelRow = b.removeFromTop (labelH);
+        thirdW = labelRow.getWidth() / 3;
+        band1FreqLabel.setBounds (labelRow.removeFromLeft (thirdW));
+        band1GainLabel.setBounds (labelRow.removeFromLeft (thirdW));
+        band1QLabel.setBounds (labelRow);
+    }
 
-    auto lsCol2 = row1.removeFromLeft (colW);
-    lsCol2.removeFromTop (btnH);
-    lsGainSlider.setBounds (lsCol2.removeFromTop (knobSize));
-    lsGainLabel.setBounds (lsCol2.removeFromTop (labelH));
-    row1.removeFromLeft (2);
+    // Band 4: Bell 2 — [Freq] [Gain] [Q]
+    {
+        auto b = layoutBand (3);
+        b.removeFromTop (btnH + 2);
+        auto knobRow = b.removeFromTop (knobSize);
+        int thirdW = knobRow.getWidth() / 3;
+        band2FreqSlider.setBounds (knobRow.removeFromLeft (thirdW).withSizeKeepingCentre (knobSize, knobSize));
+        band2GainSlider.setBounds (knobRow.removeFromLeft (thirdW).withSizeKeepingCentre (knobSize, knobSize));
+        band2QSlider.setBounds (knobRow.withSizeKeepingCentre (knobSize, knobSize));
+        auto labelRow = b.removeFromTop (labelH);
+        thirdW = labelRow.getWidth() / 3;
+        band2FreqLabel.setBounds (labelRow.removeFromLeft (thirdW));
+        band2GainLabel.setBounds (labelRow.removeFromLeft (thirdW));
+        band2QLabel.setBounds (labelRow);
+    }
 
-    // Band 1 columns
-    auto b1Col1 = row1.removeFromLeft (colW);
-    b1Col1.removeFromTop (btnH);
-    band1FreqSlider.setBounds (b1Col1.removeFromTop (knobSize));
-    band1FreqLabel.setBounds (b1Col1.removeFromTop (labelH));
-    row1.removeFromLeft (1);
+    // Band 5: HS — [On] [Freq] [Gain]
+    {
+        auto b = layoutBand (4);
+        hsOnButton.setBounds (b.removeFromTop (btnH).withSizeKeepingCentre (32, btnH));
+        b.removeFromTop (2);
+        auto knobRow = b.removeFromTop (knobSize);
+        int halfW = knobRow.getWidth() / 2;
+        hsFreqSlider.setBounds (knobRow.removeFromLeft (halfW).withSizeKeepingCentre (knobSize, knobSize));
+        hsGainSlider.setBounds (knobRow.withSizeKeepingCentre (knobSize, knobSize));
+        auto labelRow = b.removeFromTop (labelH);
+        halfW = labelRow.getWidth() / 2;
+        hsFreqLabel.setBounds (labelRow.removeFromLeft (halfW));
+        hsGainLabel.setBounds (labelRow);
+    }
 
-    auto b1Col2 = row1.removeFromLeft (colW);
-    b1Col2.removeFromTop (btnH);
-    band1GainSlider.setBounds (b1Col2.removeFromTop (knobSize));
-    band1GainLabel.setBounds (b1Col2.removeFromTop (labelH));
-    row1.removeFromLeft (1);
-
-    auto b1Col3 = row1.removeFromLeft (colW);
-    b1Col3.removeFromTop (btnH);
-    band1QSlider.setBounds (b1Col3.removeFromTop (knobSize));
-    band1QLabel.setBounds (b1Col3.removeFromTop (labelH));
-
-    bounds.removeFromTop (4);
-
-    // Row 2: Band2, HS, HC (bottom half)
-    auto row2 = bounds.removeFromTop (knobSize + labelH + btnH + 2);
-
-    // Band 2 columns
-    auto b2Col1 = row2.removeFromLeft (colW);
-    b2Col1.removeFromTop (btnH);
-    band2FreqSlider.setBounds (b2Col1.removeFromTop (knobSize));
-    band2FreqLabel.setBounds (b2Col1.removeFromTop (labelH));
-    row2.removeFromLeft (1);
-
-    auto b2Col2 = row2.removeFromLeft (colW);
-    b2Col2.removeFromTop (btnH);
-    band2GainSlider.setBounds (b2Col2.removeFromTop (knobSize));
-    band2GainLabel.setBounds (b2Col2.removeFromTop (labelH));
-    row2.removeFromLeft (1);
-
-    auto b2Col3 = row2.removeFromLeft (colW);
-    b2Col3.removeFromTop (btnH);
-    band2QSlider.setBounds (b2Col3.removeFromTop (knobSize));
-    band2QLabel.setBounds (b2Col3.removeFromTop (labelH));
-    row2.removeFromLeft (2);
-
-    // High Shelf columns
-    auto hsCol1 = row2.removeFromLeft (colW);
-    hsOnButton.setBounds (hsCol1.removeFromTop (btnH).withSizeKeepingCentre (30, btnH));
-    hsFreqSlider.setBounds (hsCol1.removeFromTop (knobSize));
-    hsFreqLabel.setBounds (hsCol1.removeFromTop (labelH));
-    row2.removeFromLeft (1);
-
-    auto hsCol2 = row2.removeFromLeft (colW);
-    hsCol2.removeFromTop (btnH);
-    hsGainSlider.setBounds (hsCol2.removeFromTop (knobSize));
-    hsGainLabel.setBounds (hsCol2.removeFromTop (labelH));
-    row2.removeFromLeft (2);
-
-    // High Cut column
-    auto hcCol = row2.removeFromLeft (colW);
-    hcOnButton.setBounds (hcCol.removeFromTop (btnH).withSizeKeepingCentre (30, btnH));
-    hcFreqSlider.setBounds (hcCol.removeFromTop (knobSize));
-    hcLabel.setBounds (hcCol.removeFromTop (labelH));
-    row2.removeFromLeft (1);
-
-    // HC slope
-    auto hcSlopeCol = row2.removeFromLeft (colW + 8);
-    hcSlopeCol.removeFromTop (btnH);
-    hcSlopeBox.setBounds (hcSlopeCol.removeFromTop (slopeH).withSizeKeepingCentre (44, slopeH));
+    // Band 6: HC — [On] [Freq] [Slope]
+    {
+        auto b = layoutBand (5);
+        hcOnButton.setBounds (b.removeFromTop (btnH).withSizeKeepingCentre (32, btnH));
+        b.removeFromTop (2);
+        hcFreqSlider.setBounds (b.removeFromTop (knobSize).withSizeKeepingCentre (knobSize, knobSize));
+        hcFreqLabel.setBounds (b.removeFromTop (labelH));
+        b.removeFromTop (2);
+        hcSlopeBox.setBounds (b.removeFromTop (comboH).reduced (4, 0));
+    }
 }

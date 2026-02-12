@@ -17,19 +17,23 @@ AdvancedCompressorEditor::AdvancedCompressorEditor (AdvancedCompressorProcessor&
     : AudioProcessorEditor (&p),
       headerToolbar (p),
       compressorDisplay (p),
-      featureBar (p),
-      controlStrip (p)
+      controlStrip (p),
+      sidechainPanel (p.getAPVTS())
 {
     setLookAndFeel (&lookAndFeel);
 
     addAndMakeVisible (headerToolbar);
     addAndMakeVisible (compressorDisplay);
-    addAndMakeVisible (featureBar);
     addAndMakeVisible (controlStrip);
+    addChildComponent (sidechainPanel); // hidden initially
+    addAndMakeVisible (helpOverlay);
+
+    // Wire SC drawer toggle
+    controlStrip.onSidechainToggle = [this] { toggleSidechainDrawer(); };
 
     setSize (Constants::kDefaultEditorWidth, Constants::kDefaultEditorHeight);
     setResizable (true, true);
-    setResizeLimits (750, 450, 1920, 1080);
+    setResizeLimits (860, 495, 1800, 1350);
 }
 
 AdvancedCompressorEditor::~AdvancedCompressorEditor()
@@ -46,8 +50,56 @@ void AdvancedCompressorEditor::resized()
 {
     auto bounds = getLocalBounds();
 
-    headerToolbar.setBounds (bounds.removeFromTop (36));
-    controlStrip.setBounds (bounds.removeFromBottom (110));
-    featureBar.setBounds (bounds.removeFromBottom (36));
+    headerToolbar.setBounds (bounds.removeFromTop (40));
+
+    // Bottom panel: control strip (Row1 + Row2 + SC bar) = ~204px
+    int bottomPanelH = 204;
+    int scDrawerH = scDrawerOpen ? 140 : 0;
+
+    // SC drawer at the very bottom (when open)
+    if (scDrawerOpen)
+    {
+        sidechainPanel.setBounds (bounds.removeFromBottom (scDrawerH));
+    }
+
+    controlStrip.setBounds (bounds.removeFromBottom (bottomPanelH));
     compressorDisplay.setBounds (bounds);
+
+    // Help overlay covers everything
+    helpOverlay.setBounds (getLocalBounds());
+    helpOverlay.toFront (false);
+}
+
+void AdvancedCompressorEditor::toggleSidechainDrawer()
+{
+    scDrawerOpen = ! scDrawerOpen;
+    controlStrip.setSidechainOpen (scDrawerOpen);
+
+    if (scDrawerOpen)
+    {
+        sidechainPanel.setVisible (true);
+    }
+
+    // Animate the resize
+    int newHeight = scDrawerOpen
+        ? getHeight() + 140
+        : getHeight() - 140;
+
+    // Clamp to limits
+    auto [minW, minH, maxW, maxH] = std::tuple { 860, 495, 1800, 1350 };
+    newHeight = juce::jlimit (minH, maxH, newHeight);
+
+    // Use animator for smooth transition
+    auto targetBounds = getBounds().withHeight (newHeight);
+    animator.animateComponent (this, targetBounds, 1.0f, 200, false, 0.5, 0.0);
+
+    if (! scDrawerOpen)
+    {
+        // Hide after animation would complete
+        juce::Timer::callAfterDelay (220, [this]
+        {
+            if (! scDrawerOpen)
+                sidechainPanel.setVisible (false);
+        });
+    }
 }

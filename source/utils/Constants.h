@@ -18,8 +18,8 @@ namespace Constants
     constexpr float kMaxFrequency = 30000.0f;
 
     // Editor
-    constexpr int kDefaultEditorWidth = 1000;
-    constexpr int kDefaultEditorHeight = 600;
+    constexpr int kDefaultEditorWidth = 960;
+    constexpr int kDefaultEditorHeight = 660;
 
     // Analyzer / FFT
     constexpr int kFFTOrder = 12;

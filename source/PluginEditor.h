@@ -15,7 +15,8 @@
 #include "ui/components/CompressorDisplay.h"
 #include "ui/components/BottomControlStrip.h"
 #include "ui/components/HeaderToolbar.h"
-#include "ui/components/FeatureBar.h"
+#include "ui/components/SidechainPanel.h"
+#include "ui/help/HelpOverlay.h"
 #include "ui/LookAndFeel/AdvancedCompressorLookAndFeel.h"
 #include <juce_gui_extra/juce_gui_extra.h>
 #include <juce_opengl/juce_opengl.h>
@@ -34,8 +35,14 @@ private:
 
     HeaderToolbar headerToolbar;
     CompressorDisplay compressorDisplay;
-    FeatureBar featureBar;
     BottomControlStrip controlStrip;
+    SidechainPanel sidechainPanel;
+    HelpOverlay helpOverlay;
+
+    bool scDrawerOpen = false;
+    juce::ComponentAnimator animator;
+
+    void toggleSidechainDrawer();
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AdvancedCompressorEditor)
 };

@@ -28,6 +28,9 @@ A professional dynamics compressor audio plugin built with [JUCE 7](https://juce
 - **Real-Time Spectrum Analyzer** with pre/post display
 - **19 Factory Presets** across Vocal, Drums, Bus, Mastering, and Creative categories
 - **Input/Output Gain and Pan** controls
+- **Hover Help** -- hold your cursor over any control for 1.3 seconds to see a contextual tooltip
+- **Collapsible Sidechain Drawer** -- animated expand/collapse panel for the 6-band SC EQ
+- **Pro-C 3 Inspired Layout** -- two-tier control panel with large primary knobs and compact secondary controls, meters on the right
 
 ## Compression Styles
 
@@ -138,6 +141,9 @@ advanced-compressor/
     ├── parameters/                 Parameter definitions
     ├── presets/                    Preset system
     ├── ui/                        UI components and styling
+    │   ├── components/            Panels, knobs, meters, icon buttons
+    │   ├── help/                  Hover help overlay and tooltip database
+    │   └── LookAndFeel/           Colours, fonts, icons, custom L&F
     └── utils/                     Math utilities and constants
 ```
 

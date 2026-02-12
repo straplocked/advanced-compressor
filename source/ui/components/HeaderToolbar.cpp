@@ -13,49 +13,54 @@
 #include "../../PluginProcessor.h"
 #include "../../parameters/ParameterIDs.h"
 #include "../../midi/MIDILearnManager.h"
+#include "../LookAndFeel/Fonts.h"
+#include "../LookAndFeel/Icons.h"
 
 HeaderToolbar::HeaderToolbar (AdvancedCompressorProcessor& p)
     : processor (p),
-      presetManager (p.getPresetManager())
+      presetManager (p.getPresetManager()),
+      prevButton ("Prev", Icons::getChevronLeft()),
+      nextButton ("Next", Icons::getChevronRight()),
+      saveButton ("Save", Icons::getSave()),
+      undoButton ("Undo", Icons::getUndo()),
+      redoButton ("Redo", Icons::getRedo()),
+      deltaButton ("Delta", Icons::getDelta())
 {
     presetManager.addListener (this);
     auto& apvts = processor.getAPVTS();
 
-    // Preset controls
-    prevButton.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
-    prevButton.setColour (juce::TextButton::textColourOffId, ColourPalette::textDim());
+    // Preset navigation
+    prevButton.setComponentID ("header.prevPreset");
     prevButton.onClick = [this] { presetManager.previousPreset(); };
     addAndMakeVisible (prevButton);
 
-    nextButton.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
-    nextButton.setColour (juce::TextButton::textColourOffId, ColourPalette::textDim());
+    nextButton.setComponentID ("header.nextPreset");
     nextButton.onClick = [this] { presetManager.nextPreset(); };
     addAndMakeVisible (nextButton);
 
+    presetNameButton.setComponentID ("header.presetName");
     presetNameButton.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
     presetNameButton.setColour (juce::TextButton::textColourOffId, ColourPalette::textBright());
     presetNameButton.onClick = [this] { showPresetMenu(); };
     addAndMakeVisible (presetNameButton);
 
-    saveButton.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
-    saveButton.setColour (juce::TextButton::textColourOffId, ColourPalette::textDim());
+    saveButton.setComponentID ("header.savePreset");
     saveButton.onClick = [this] { showSaveDialog(); };
     addAndMakeVisible (saveButton);
 
     updatePresetName();
 
     // Undo / Redo
-    undoButton.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
-    undoButton.setColour (juce::TextButton::textColourOffId, ColourPalette::textDim());
+    undoButton.setComponentID ("header.undo");
     undoButton.onClick = [this] { processor.getUndoManager().undo(); };
     addAndMakeVisible (undoButton);
 
-    redoButton.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
-    redoButton.setColour (juce::TextButton::textColourOffId, ColourPalette::textDim());
+    redoButton.setComponentID ("header.redo");
     redoButton.onClick = [this] { processor.getUndoManager().redo(); };
     addAndMakeVisible (redoButton);
 
     // A/B comparison
+    abButton.setComponentID ("header.abToggle");
     abButton.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
     abButton.setColour (juce::TextButton::textColourOffId, ColourPalette::textBright());
     abButton.onClick = [this]
@@ -65,12 +70,22 @@ HeaderToolbar::HeaderToolbar (AdvancedCompressorProcessor& p)
     };
     addAndMakeVisible (abButton);
 
+    copyABButton.setComponentID ("header.copyAB");
     copyABButton.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
     copyABButton.setColour (juce::TextButton::textColourOffId, ColourPalette::textDim());
     copyABButton.onClick = [this] { processor.copyAtoB(); };
     addAndMakeVisible (copyABButton);
 
+    // Delta listen mode
+    deltaButton.setComponentID ("header.delta");
+    deltaButton.setClickingTogglesState (true);
+    deltaButton.setActiveColour (ColourPalette::gainReduction());
+    addAndMakeVisible (deltaButton);
+    deltaAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (
+        apvts, ParamIDs::kDelta, deltaButton);
+
     // MIDI Learn toggle
+    midiLearnButton.setComponentID ("header.midiLearn");
     midiLearnButton.setClickingTogglesState (true);
     midiLearnButton.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
     midiLearnButton.setColour (juce::TextButton::textColourOffId, ColourPalette::textDim());
@@ -80,10 +95,7 @@ HeaderToolbar::HeaderToolbar (AdvancedCompressorProcessor& p)
         auto& learnMgr = processor.getMIDILearnManager();
         if (midiLearnButton.getToggleState())
         {
-            // Show popup to pick a parameter to learn
             juce::PopupMenu menu;
-            auto styleNames = ParamIDs::getStyleNames();
-            // List common automatable parameters
             struct ParamEntry { const char* id; const char* name; };
             static const ParamEntry entries[] = {
                 { ParamIDs::kThreshold,  "Threshold" },
@@ -136,87 +148,12 @@ HeaderToolbar::HeaderToolbar (AdvancedCompressorProcessor& p)
     };
     addAndMakeVisible (midiLearnButton);
 
-    // Delta listen mode
-    deltaButton.setClickingTogglesState (true);
-    deltaButton.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
-    deltaButton.setColour (juce::TextButton::textColourOffId, ColourPalette::textDim());
-    deltaButton.setColour (juce::TextButton::buttonOnColourId, ColourPalette::gainReduction().withAlpha (0.3f));
-    addAndMakeVisible (deltaButton);
-    deltaAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (
-        apvts, ParamIDs::kDelta, deltaButton);
-
-    // Style selector
-    styleSelector.addItemList (ParamIDs::getStyleNames(), 1);
-    styleSelector.setJustificationType (juce::Justification::centred);
-    addAndMakeVisible (styleSelector);
-    styleAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment> (
-        apvts, ParamIDs::kCompStyle, styleSelector);
-
-    // Oversample selector
-    oversampleSelector.addItemList (ParamIDs::getOversamplingNames(), 1);
-    oversampleSelector.setJustificationType (juce::Justification::centred);
-    addAndMakeVisible (oversampleSelector);
-    oversampleAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment> (
-        apvts, ParamIDs::kOversample, oversampleSelector);
-
-    // Combo box labels
-    auto setupComboLabel = [this] (juce::Label& label, const juce::String& text)
-    {
-        label.setText (text, juce::dontSendNotification);
-        label.setFont (9.0f);
-        label.setColour (juce::Label::textColourId, ColourPalette::axisText());
-        label.setJustificationType (juce::Justification::centredRight);
-        addAndMakeVisible (label);
-    };
-    setupComboLabel (styleLabel, "Style");
-    setupComboLabel (oversampleLabel, "OS");
-    setupComboLabel (scaleLabel, "UI");
-
-    // Scale selector
-    scaleSelector.addItemList ({ "75%", "100%", "125%", "150%", "200%" }, 1);
-    scaleSelector.setSelectedId (2, juce::dontSendNotification); // default 100%
-    scaleSelector.setJustificationType (juce::Justification::centred);
-    scaleSelector.onChange = [this]
-    {
-        static constexpr float scaleFactors[] = { 0.75f, 1.0f, 1.25f, 1.5f, 2.0f };
-        int idx = scaleSelector.getSelectedId() - 1;
-        if (idx >= 0 && idx < 5)
-        {
-            if (auto* editor = dynamic_cast<juce::AudioProcessorEditor*> (getParentComponent()))
-                editor->setScaleFactor (scaleFactors[idx]);
-        }
-    };
-    addAndMakeVisible (scaleSelector);
-
-    // Analyzer toggle
-    analyzerButton.setClickingTogglesState (true);
-    analyzerButton.setColour (juce::TextButton::buttonOnColourId, ColourPalette::spectrumPost().withAlpha (0.3f));
-    addAndMakeVisible (analyzerButton);
-    analyzerAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (
-        apvts, ParamIDs::kAnalyzerOn, analyzerButton);
-
-    // Output gain knob
-    outputGainSlider.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
-    outputGainSlider.setTextBoxStyle (juce::Slider::NoTextBox, true, 0, 0);
-    addAndMakeVisible (outputGainSlider);
-    outputGainAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (
-        apvts, ParamIDs::kOutputGain, outputGainSlider);
-
-    outputGainLabel.setText ("Out", juce::dontSendNotification);
-    outputGainLabel.setJustificationType (juce::Justification::centred);
-    outputGainLabel.setFont (10.0f);
-    outputGainLabel.setColour (juce::Label::textColourId, ColourPalette::axisText());
-    addAndMakeVisible (outputGainLabel);
 }
 
 HeaderToolbar::~HeaderToolbar()
 {
     presetManager.removeListener (this);
     deltaAttachment.reset();
-    styleAttachment.reset();
-    oversampleAttachment.reset();
-    analyzerAttachment.reset();
-    outputGainAttachment.reset();
 }
 
 void HeaderToolbar::paint (juce::Graphics& g)
@@ -234,95 +171,72 @@ void HeaderToolbar::paint (juce::Graphics& g)
     g.setColour (ColourPalette::bevelDark());
     g.drawLine (0.0f, bottomY - 0.5f, bounds.getRight(), bottomY - 0.5f, 1.0f);
 
-    g.setFont (16.0f);
+    g.setFont (Fonts::getTitle (18.0f));
     g.setColour (juce::Colour (0x40000000));
-    g.drawText ("Advanced Compressor", 13, 1, 170, getHeight(), juce::Justification::centredLeft, true);
+    g.drawText ("ADVANCED COMPRESSOR", 13, 1, 250, getHeight(), juce::Justification::centredLeft, true);
     g.setColour (ColourPalette::textBright());
-    g.drawText ("Advanced Compressor", 12, 0, 170, getHeight(), juce::Justification::centredLeft, true);
+    g.drawText ("ADVANCED COMPRESSOR", 12, 0, 250, getHeight(), juce::Justification::centredLeft, true);
 }
 
 void HeaderToolbar::resized()
 {
     auto bounds = getLocalBounds().reduced (8, 4);
-    bounds.removeFromLeft (176);
+    bounds.removeFromLeft (260);
+
+    int iconSize = 28;
+    int textBtnH = 22;
 
     auto rightBounds = bounds;
 
-    auto outArea = rightBounds.removeFromRight (50);
-    auto outKnob = outArea.removeFromTop (outArea.getHeight() - 2);
-    outputGainSlider.setBounds (outKnob.withSizeKeepingCentre (28, 28));
-    outputGainLabel.setBounds (outArea);
+    // Right side: MIDI Learn
+    auto midiArea = rightBounds.removeFromRight (36);
+    midiLearnButton.setBounds (midiArea.withHeight (textBtnH).withCentre (midiArea.getCentre()));
     rightBounds.removeFromRight (6);
 
-    auto scaleLabelArea = rightBounds.removeFromRight (18);
-    scaleLabel.setBounds (scaleLabelArea.withHeight (22).withCentre (scaleLabelArea.getCentre()));
-    auto scaleArea = rightBounds.removeFromRight (48);
-    scaleSelector.setBounds (scaleArea.withHeight (22).withCentre (scaleArea.getCentre()));
-    rightBounds.removeFromRight (4);
-
-    auto osLabelArea = rightBounds.removeFromRight (18);
-    oversampleLabel.setBounds (osLabelArea.withHeight (22).withCentre (osLabelArea.getCentre()));
-    auto osArea = rightBounds.removeFromRight (50);
-    oversampleSelector.setBounds (osArea.withHeight (22).withCentre (osArea.getCentre()));
+    // Delta
+    auto deltaArea = rightBounds.removeFromRight (iconSize);
+    deltaButton.setBounds (deltaArea.withSizeKeepingCentre (iconSize, iconSize));
     rightBounds.removeFromRight (6);
-
-    auto styleLabelArea = rightBounds.removeFromRight (30);
-    styleLabel.setBounds (styleLabelArea.withHeight (22).withCentre (styleLabelArea.getCentre()));
-    auto styleArea = rightBounds.removeFromRight (90);
-    styleSelector.setBounds (styleArea.withHeight (22).withCentre (styleArea.getCentre()));
-    rightBounds.removeFromRight (6);
-
-    auto analyzerArea = rightBounds.removeFromRight (62);
-    analyzerButton.setBounds (analyzerArea.withHeight (22).withCentre (analyzerArea.getCentre()));
-    rightBounds.removeFromRight (4);
-
-    // Delta button
-    auto deltaArea = rightBounds.removeFromRight (42);
-    deltaButton.setBounds (deltaArea.withHeight (22).withCentre (deltaArea.getCentre()));
-    rightBounds.removeFromRight (4);
 
     // A/B buttons
     auto copyABArea = rightBounds.removeFromRight (30);
-    copyABButton.setBounds (copyABArea.withHeight (22).withCentre (copyABArea.getCentre()));
+    copyABButton.setBounds (copyABArea.withHeight (textBtnH).withCentre (copyABArea.getCentre()));
     rightBounds.removeFromRight (2);
 
     auto abArea = rightBounds.removeFromRight (22);
-    abButton.setBounds (abArea.withHeight (22).withCentre (abArea.getCentre()));
-    rightBounds.removeFromRight (4);
-
-    // MIDI Learn
-    auto midiArea = rightBounds.removeFromRight (36);
-    midiLearnButton.setBounds (midiArea.withHeight (22).withCentre (midiArea.getCentre()));
-    rightBounds.removeFromRight (4);
+    abButton.setBounds (abArea.withHeight (textBtnH).withCentre (abArea.getCentre()));
+    rightBounds.removeFromRight (6);
 
     // Undo / Redo
-    auto redoArea = rightBounds.removeFromRight (36);
-    redoButton.setBounds (redoArea.withHeight (22).withCentre (redoArea.getCentre()));
+    auto redoArea = rightBounds.removeFromRight (iconSize);
+    redoButton.setBounds (redoArea.withSizeKeepingCentre (iconSize, iconSize));
     rightBounds.removeFromRight (2);
 
-    auto undoArea = rightBounds.removeFromRight (36);
-    undoButton.setBounds (undoArea.withHeight (22).withCentre (undoArea.getCentre()));
+    auto undoArea = rightBounds.removeFromRight (iconSize);
+    undoButton.setBounds (undoArea.withSizeKeepingCentre (iconSize, iconSize));
+    rightBounds.removeFromRight (6);
+
+    // Save
+    auto saveArea = rightBounds.removeFromRight (iconSize);
+    saveButton.setBounds (saveArea.withSizeKeepingCentre (iconSize, iconSize));
     rightBounds.removeFromRight (4);
 
+    // Preset name + navigation
     auto presetBounds = rightBounds;
-    presetBounds.removeFromRight (8);
+    presetBounds.removeFromRight (4);
 
     auto presetArea = presetBounds.withSizeKeepingCentre (
-        juce::jmin (280, presetBounds.getWidth()), presetBounds.getHeight());
+        juce::jmin (240, presetBounds.getWidth()), presetBounds.getHeight());
 
-    prevButton.setBounds (presetArea.removeFromLeft (24).withHeight (22).withCentre (
-        juce::Point<int> (presetArea.getX() - 12, presetArea.getCentreY())));
+    auto nextBtnArea = presetArea.removeFromRight (iconSize);
+    nextButton.setBounds (nextBtnArea.withSizeKeepingCentre (iconSize, iconSize));
 
-    auto saveBtnArea = presetArea.removeFromRight (38);
-    saveButton.setBounds (saveBtnArea.withHeight (22).withCentre (saveBtnArea.getCentre()));
-    presetArea.removeFromRight (4);
+    auto prevBtnArea = presetArea.removeFromLeft (iconSize);
+    prevButton.setBounds (prevBtnArea.withSizeKeepingCentre (iconSize, iconSize));
 
-    auto nextBtnArea = presetArea.removeFromRight (24);
-    nextButton.setBounds (nextBtnArea.withHeight (22).withCentre (nextBtnArea.getCentre()));
-
-    presetArea.removeFromLeft (4);
-    presetArea.removeFromRight (4);
-    presetNameButton.setBounds (presetArea.withHeight (22).withCentre (presetArea.getCentre()));
+    presetArea.removeFromLeft (2);
+    presetArea.removeFromRight (2);
+    presetNameButton.setBounds (presetArea.withHeight (textBtnH).withCentre (presetArea.getCentre()));
 }
 
 void HeaderToolbar::presetChanged() { updatePresetName(); }
@@ -334,7 +248,6 @@ void HeaderToolbar::showPresetMenu()
     auto categories = presetManager.getCategories();
     auto& allPresets = presetManager.getAllPresets();
 
-    // Favorites section
     auto favIndices = presetManager.getFavoriteIndices();
     if (! favIndices.empty())
     {
@@ -348,7 +261,6 @@ void HeaderToolbar::showPresetMenu()
         menu.addSeparator();
     }
 
-    // Category sections
     for (auto& category : categories)
     {
         juce::PopupMenu subMenu;

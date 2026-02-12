@@ -11,7 +11,10 @@
 
 #include "SidechainMeterRing.h"
 
-SidechainMeterRing::SidechainMeterRing() = default;
+SidechainMeterRing::SidechainMeterRing()
+{
+    setInterceptsMouseClicks (false, false);
+}
 
 void SidechainMeterRing::setGainReduction (float gr)
 {

@@ -15,6 +15,7 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "../../presets/PresetManager.h"
 #include "../LookAndFeel/ColourPalette.h"
+#include "IconButton.h"
 
 class AdvancedCompressorProcessor;
 
@@ -33,30 +34,23 @@ private:
     AdvancedCompressorProcessor& processor;
     PresetManager& presetManager;
 
-    juce::TextButton prevButton { "<" };
-    juce::TextButton nextButton { ">" };
+    // Preset controls
+    IconButton prevButton;
+    IconButton nextButton;
     juce::TextButton presetNameButton { "Init" };
-    juce::TextButton saveButton { "Save" };
+    IconButton saveButton;
 
-    juce::TextButton undoButton { "Undo" };
-    juce::TextButton redoButton { "Redo" };
-    juce::TextButton deltaButton { "Delta" };
+    // Actions
+    IconButton undoButton;
+    IconButton redoButton;
+    IconButton deltaButton;
+
+    // A/B comparison (kept as text)
     juce::TextButton abButton { "A" };
     juce::TextButton copyABButton { "A>B" };
     juce::TextButton midiLearnButton { "MIDI" };
 
-    juce::ComboBox styleSelector;
-    juce::ComboBox oversampleSelector;
-    juce::ComboBox scaleSelector;
-    juce::Label styleLabel, oversampleLabel, scaleLabel;
-    juce::TextButton analyzerButton { "Analyzer" };
-    juce::Slider outputGainSlider;
-    juce::Label outputGainLabel;
-
-    std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> styleAttachment;
-    std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> oversampleAttachment;
-    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> analyzerAttachment;
-    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> outputGainAttachment;
+    // APVTS attachments
     std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> deltaAttachment;
 
     void showPresetMenu();

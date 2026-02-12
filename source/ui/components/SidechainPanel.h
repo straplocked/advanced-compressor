@@ -29,7 +29,7 @@ private:
     juce::Slider lcFreqSlider;
     juce::TextButton lcOnButton { "LC" };
     juce::ComboBox lcSlopeBox;
-    juce::Label lcLabel;
+    juce::Label lcFreqLabel;
 
     // Band 2: Low Shelf
     juce::Slider lsFreqSlider, lsGainSlider;
@@ -53,7 +53,7 @@ private:
     juce::Slider hcFreqSlider;
     juce::TextButton hcOnButton { "HC" };
     juce::ComboBox hcSlopeBox;
-    juce::Label hcLabel;
+    juce::Label hcFreqLabel;
 
     // Attachments
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> lcFreqAttach;

@@ -70,6 +70,12 @@ if(HAS_CLAP)
     )
 endif()
 
+# --- Binary Data (fonts) ---
+juce_add_binary_data(AdvancedCompressorBinaryData SOURCES
+    resources/fonts/SpaceGrotesk-Regular.ttf
+    resources/fonts/Audiowide-Regular.ttf
+)
+
 # --- Source Files ---
 file(GLOB_RECURSE SourceFiles CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/source/*.cpp"
@@ -81,6 +87,7 @@ target_include_directories(AdvancedCompressor PRIVATE "${CMAKE_CURRENT_SOURCE_DI
 # --- JUCE Module Dependencies ---
 target_link_libraries(AdvancedCompressor
     PRIVATE
+        AdvancedCompressorBinaryData
         juce::juce_audio_utils
         juce::juce_audio_processors
         juce::juce_dsp
