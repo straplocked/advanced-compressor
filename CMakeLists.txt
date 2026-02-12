@@ -1,7 +1,10 @@
 cmake_minimum_required(VERSION 3.25)
 
-# Platform defaults (must be before project() for deployment target to take effect)
-include(cmake/PlatformDefaults.cmake)
+# Deployment target must be set before project() to propagate to all sub-builds
+if(APPLE)
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13" CACHE STRING "Minimum macOS version")
+    set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "Build universal binary")
+endif()
 
 set(ADVANCED_COMPRESSOR_VERSION_MAJOR 0)
 set(ADVANCED_COMPRESSOR_VERSION_MINOR 1)
@@ -16,6 +19,9 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+# Compiler-specific flags (must be after project() so compiler is detected)
+include(cmake/PlatformDefaults.cmake)
 
 # JUCE
 add_subdirectory(JUCE)
