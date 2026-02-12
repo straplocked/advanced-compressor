@@ -14,50 +14,46 @@
 #include "../../parameters/ParameterIDs.h"
 #include "../../midi/MIDILearnManager.h"
 #include "../LookAndFeel/Fonts.h"
-#include "../LookAndFeel/Icons.h"
 
 HeaderToolbar::HeaderToolbar (AdvancedCompressorProcessor& p)
     : processor (p),
-      presetManager (p.getPresetManager()),
-      prevButton ("Prev", Icons::getChevronLeft()),
-      nextButton ("Next", Icons::getChevronRight()),
-      saveButton ("Save", Icons::getSave()),
-      undoButton ("Undo", Icons::getUndo()),
-      redoButton ("Redo", Icons::getRedo()),
-      deltaButton ("Delta", Icons::getDelta())
+      presetManager (p.getPresetManager())
 {
     presetManager.addListener (this);
     auto& apvts = processor.getAPVTS();
 
-    // Preset navigation
-    prevButton.setComponentID ("header.prevPreset");
-    prevButton.onClick = [this] { presetManager.previousPreset(); };
-    addAndMakeVisible (prevButton);
+    auto setupIconButton = [this] (juce::TextButton& button, const juce::String& id)
+    {
+        button.setComponentID (id);
+        button.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
+        button.setColour (juce::TextButton::textColourOffId, ColourPalette::textDim());
+        addAndMakeVisible (button);
+    };
 
-    nextButton.setComponentID ("header.nextPreset");
+    // Preset navigation
+    setupIconButton (prevButton, "header.prevPreset");
+    prevButton.onClick = [this] { presetManager.previousPreset(); };
+
+    setupIconButton (nextButton, "header.nextPreset");
     nextButton.onClick = [this] { presetManager.nextPreset(); };
-    addAndMakeVisible (nextButton);
 
     presetNameButton.setComponentID ("header.presetName");
     presetNameButton.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
     presetNameButton.setColour (juce::TextButton::textColourOffId, ColourPalette::textBright());
-    presetNameButton.onClick = [this] { showPresetMenu(); };
+    presetNameButton.onClick = [this] { if (onPresetNameClicked) onPresetNameClicked(); };
     addAndMakeVisible (presetNameButton);
 
-    saveButton.setComponentID ("header.savePreset");
+    setupIconButton (saveButton, "header.savePreset");
     saveButton.onClick = [this] { showSaveDialog(); };
-    addAndMakeVisible (saveButton);
 
     updatePresetName();
 
     // Undo / Redo
-    undoButton.setComponentID ("header.undo");
+    setupIconButton (undoButton, "header.undo");
     undoButton.onClick = [this] { processor.getUndoManager().undo(); };
-    addAndMakeVisible (undoButton);
 
-    redoButton.setComponentID ("header.redo");
+    setupIconButton (redoButton, "header.redo");
     redoButton.onClick = [this] { processor.getUndoManager().redo(); };
-    addAndMakeVisible (redoButton);
 
     // A/B comparison
     abButton.setComponentID ("header.abToggle");
@@ -79,7 +75,10 @@ HeaderToolbar::HeaderToolbar (AdvancedCompressorProcessor& p)
     // Delta listen mode
     deltaButton.setComponentID ("header.delta");
     deltaButton.setClickingTogglesState (true);
-    deltaButton.setActiveColour (ColourPalette::gainReduction());
+    deltaButton.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
+    deltaButton.setColour (juce::TextButton::textColourOffId, ColourPalette::textDim());
+    deltaButton.setColour (juce::TextButton::buttonOnColourId, ColourPalette::gainReduction().withAlpha (0.25f));
+    deltaButton.setColour (juce::TextButton::textColourOnId, ColourPalette::textBright());
     addAndMakeVisible (deltaButton);
     deltaAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (
         apvts, ParamIDs::kDelta, deltaButton);
@@ -171,7 +170,8 @@ void HeaderToolbar::paint (juce::Graphics& g)
     g.setColour (ColourPalette::bevelDark());
     g.drawLine (0.0f, bottomY - 0.5f, bounds.getRight(), bottomY - 0.5f, 1.0f);
 
-    g.setFont (Fonts::getTitle (18.0f));
+    // Title with drop shadow (matching EQ pattern)
+    g.setFont (Fonts::getTitle (17.5f));
     g.setColour (juce::Colour (0x40000000));
     g.drawText ("ADVANCED COMPRESSOR", 13, 1, 250, getHeight(), juce::Justification::centredLeft, true);
     g.setColour (ColourPalette::textBright());
@@ -181,62 +181,57 @@ void HeaderToolbar::paint (juce::Graphics& g)
 void HeaderToolbar::resized()
 {
     auto bounds = getLocalBounds().reduced (8, 4);
-    bounds.removeFromLeft (260);
 
-    int iconSize = 28;
-    int textBtnH = 22;
+    int btnH = 22;
+    int iconW = 36;
 
-    auto rightBounds = bounds;
+    // === Left side: title gap, then undo/redo, then A/B ===
+    bounds.removeFromLeft (260); // title space
 
-    // Right side: MIDI Learn
-    auto midiArea = rightBounds.removeFromRight (36);
-    midiLearnButton.setBounds (midiArea.withHeight (textBtnH).withCentre (midiArea.getCentre()));
-    rightBounds.removeFromRight (6);
+    auto undoArea = bounds.removeFromLeft (iconW);
+    undoButton.setBounds (undoArea.withHeight (btnH).withCentre (undoArea.getCentre()));
 
-    // Delta
-    auto deltaArea = rightBounds.removeFromRight (iconSize);
-    deltaButton.setBounds (deltaArea.withSizeKeepingCentre (iconSize, iconSize));
-    rightBounds.removeFromRight (6);
+    auto redoArea = bounds.removeFromLeft (iconW);
+    redoButton.setBounds (redoArea.withHeight (btnH).withCentre (redoArea.getCentre()));
 
-    // A/B buttons
-    auto copyABArea = rightBounds.removeFromRight (30);
-    copyABButton.setBounds (copyABArea.withHeight (textBtnH).withCentre (copyABArea.getCentre()));
-    rightBounds.removeFromRight (2);
+    bounds.removeFromLeft (6);
 
-    auto abArea = rightBounds.removeFromRight (22);
-    abButton.setBounds (abArea.withHeight (textBtnH).withCentre (abArea.getCentre()));
-    rightBounds.removeFromRight (6);
+    auto abArea = bounds.removeFromLeft (22);
+    abButton.setBounds (abArea.withHeight (btnH).withCentre (abArea.getCentre()));
+    bounds.removeFromLeft (2);
 
-    // Undo / Redo
-    auto redoArea = rightBounds.removeFromRight (iconSize);
-    redoButton.setBounds (redoArea.withSizeKeepingCentre (iconSize, iconSize));
-    rightBounds.removeFromRight (2);
+    auto copyABArea = bounds.removeFromLeft (30);
+    copyABButton.setBounds (copyABArea.withHeight (btnH).withCentre (copyABArea.getCentre()));
 
-    auto undoArea = rightBounds.removeFromRight (iconSize);
-    undoButton.setBounds (undoArea.withSizeKeepingCentre (iconSize, iconSize));
-    rightBounds.removeFromRight (6);
+    bounds.removeFromLeft (8);
 
-    // Save
-    auto saveArea = rightBounds.removeFromRight (iconSize);
-    saveButton.setBounds (saveArea.withSizeKeepingCentre (iconSize, iconSize));
-    rightBounds.removeFromRight (4);
+    // === Right side: MIDI, Delta ===
+    auto midiArea = bounds.removeFromRight (36);
+    midiLearnButton.setBounds (midiArea.withHeight (btnH).withCentre (midiArea.getCentre()));
+    bounds.removeFromRight (4);
 
-    // Preset name + navigation
-    auto presetBounds = rightBounds;
-    presetBounds.removeFromRight (4);
+    auto deltaArea = bounds.removeFromRight (40);
+    deltaButton.setBounds (deltaArea.withHeight (btnH).withCentre (deltaArea.getCentre()));
+    bounds.removeFromRight (4);
 
+    // === Center: preset navigation ===
+    auto presetBounds = bounds;
     auto presetArea = presetBounds.withSizeKeepingCentre (
-        juce::jmin (240, presetBounds.getWidth()), presetBounds.getHeight());
+        juce::jmin (260, presetBounds.getWidth()), presetBounds.getHeight());
 
-    auto nextBtnArea = presetArea.removeFromRight (iconSize);
-    nextButton.setBounds (nextBtnArea.withSizeKeepingCentre (iconSize, iconSize));
+    auto prevBtnArea = presetArea.removeFromLeft (24);
+    prevButton.setBounds (prevBtnArea.withHeight (btnH).withCentre (prevBtnArea.getCentre()));
+    presetArea.removeFromLeft (4);
 
-    auto prevBtnArea = presetArea.removeFromLeft (iconSize);
-    prevButton.setBounds (prevBtnArea.withSizeKeepingCentre (iconSize, iconSize));
+    auto saveBtnArea = presetArea.removeFromRight (38);
+    saveButton.setBounds (saveBtnArea.withHeight (btnH).withCentre (saveBtnArea.getCentre()));
+    presetArea.removeFromRight (4);
 
-    presetArea.removeFromLeft (2);
-    presetArea.removeFromRight (2);
-    presetNameButton.setBounds (presetArea.withHeight (textBtnH).withCentre (presetArea.getCentre()));
+    auto nextBtnArea = presetArea.removeFromRight (24);
+    nextButton.setBounds (nextBtnArea.withHeight (btnH).withCentre (nextBtnArea.getCentre()));
+    presetArea.removeFromRight (4);
+
+    presetNameButton.setBounds (presetArea.withHeight (btnH).withCentre (presetArea.getCentre()));
 }
 
 void HeaderToolbar::presetChanged() { updatePresetName(); }

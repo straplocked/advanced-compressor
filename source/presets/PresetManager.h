@@ -31,7 +31,9 @@ public:
     int getCurrentPresetIndex() const { return currentIndex; }
     juce::String getCurrentPresetName() const;
 
-    bool saveCurrentAsPreset (const juce::String& name);
+    bool saveCurrentAsPreset (const juce::String& name, const juce::String& category = "User");
+    bool exportPresetToJSON (int presetIndex, const juce::File& file);
+    bool importPresetFromJSON (const juce::File& file);
     bool deleteUserPreset (int presetIndex);
     void rescanUserPresets();
     juce::File getUserPresetsDirectory() const;

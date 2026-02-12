@@ -13,6 +13,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "ColourPalette.h"
+#include "Fonts.h"
 
 class AdvancedCompressorLookAndFeel : public juce::LookAndFeel_V4
 {
@@ -180,5 +181,113 @@ public:
         g.fillPath (arrow);
 
         (void) box;
+    }
+
+    void drawButtonText (juce::Graphics& g, juce::TextButton& button,
+                         bool, bool) override
+    {
+        auto text = button.getButtonText();
+        auto bounds = button.getLocalBounds().toFloat();
+        float alpha = button.isEnabled() ? 1.0f : 0.5f;
+
+        auto colour = button.findColour (button.getToggleState()
+            ? juce::TextButton::textColourOnId
+            : juce::TextButton::textColourOffId).withMultipliedAlpha (alpha);
+        g.setColour (colour);
+
+        if (text.length() == 1)
+        {
+            float iconSize = juce::jmin (bounds.getWidth(), bounds.getHeight()) * 0.4f;
+            float cx = bounds.getCentreX();
+            float cy = bounds.getCentreY();
+
+            switch (static_cast<int> (text[0]))
+            {
+                case 0x25C0: drawIconTriangle (g, cx, cy, iconSize, true); return;
+                case 0x25B6: drawIconTriangle (g, cx, cy, iconSize, false); return;
+                case 0x2913: drawIconSave (g, cx, cy, iconSize); return;
+                case 0x21A9: drawIconUndo (g, cx, cy, iconSize); return;
+                case 0x21AA: drawIconRedo (g, cx, cy, iconSize); return;
+                case 0x2665: drawIconHeart (g, cx, cy, iconSize); return;
+                default: break;
+            }
+        }
+
+        g.setFont (Fonts::getBody (bounds.getHeight() * 0.55f));
+        g.drawText (text, bounds, juce::Justification::centred, false);
+    }
+
+private:
+    static void drawIconTriangle (juce::Graphics& g, float cx, float cy, float s, bool left)
+    {
+        juce::Path p;
+        float hw = s * 0.35f;
+        float hh = s * 0.45f;
+        if (left)
+            p.addTriangle (cx + hw, cy - hh, cx + hw, cy + hh, cx - hh, cy);
+        else
+            p.addTriangle (cx - hw, cy - hh, cx - hw, cy + hh, cx + hh, cy);
+        g.fillPath (p);
+    }
+
+    static void drawIconSave (juce::Graphics& g, float cx, float cy, float s)
+    {
+        float stemW = s * 0.15f;
+        g.fillRect (cx - stemW, cy - s * 0.45f, stemW * 2.0f, s * 0.5f);
+        juce::Path p;
+        p.addTriangle (cx - s * 0.4f, cy + s * 0.05f,
+                       cx + s * 0.4f, cy + s * 0.05f,
+                       cx, cy + s * 0.45f);
+        g.fillPath (p);
+        g.drawLine (cx - s * 0.5f, cy + s * 0.6f,
+                    cx + s * 0.5f, cy + s * 0.6f, 1.5f);
+    }
+
+    static void drawIconUndo (juce::Graphics& g, float cx, float cy, float s)
+    {
+        juce::Path curve;
+        curve.startNewSubPath (cx + s * 0.4f, cy + s * 0.15f);
+        curve.cubicTo (cx + s * 0.4f, cy - s * 0.5f,
+                       cx - s * 0.4f, cy - s * 0.5f,
+                       cx - s * 0.4f, cy + s * 0.15f);
+        g.strokePath (curve, juce::PathStrokeType (1.5f));
+        juce::Path ah;
+        ah.addTriangle (cx - s * 0.4f, cy + s * 0.4f,
+                        cx - s * 0.15f, cy,
+                        cx - s * 0.65f, cy);
+        g.fillPath (ah);
+    }
+
+    static void drawIconRedo (juce::Graphics& g, float cx, float cy, float s)
+    {
+        juce::Path curve;
+        curve.startNewSubPath (cx - s * 0.4f, cy + s * 0.15f);
+        curve.cubicTo (cx - s * 0.4f, cy - s * 0.5f,
+                       cx + s * 0.4f, cy - s * 0.5f,
+                       cx + s * 0.4f, cy + s * 0.15f);
+        g.strokePath (curve, juce::PathStrokeType (1.5f));
+        juce::Path ah;
+        ah.addTriangle (cx + s * 0.4f, cy + s * 0.4f,
+                        cx + s * 0.15f, cy,
+                        cx + s * 0.65f, cy);
+        g.fillPath (ah);
+    }
+
+    static void drawIconHeart (juce::Graphics& g, float cx, float cy, float s)
+    {
+        juce::Path p;
+        float w = s * 0.52f;
+        float h = s * 0.48f;
+        // Left lobe
+        p.startNewSubPath (cx, cy + h * 0.85f);
+        p.cubicTo (cx - w * 1.2f, cy + h * 0.1f,
+                   cx - w * 1.0f, cy - h * 1.0f,
+                   cx, cy - h * 0.3f);
+        // Right lobe
+        p.cubicTo (cx + w * 1.0f, cy - h * 1.0f,
+                   cx + w * 1.2f, cy + h * 0.1f,
+                   cx, cy + h * 0.85f);
+        p.closeSubPath();
+        g.fillPath (p);
     }
 };

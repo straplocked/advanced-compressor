@@ -19,7 +19,7 @@ namespace Constants
 
     // Editor
     constexpr int kDefaultEditorWidth = 960;
-    constexpr int kDefaultEditorHeight = 660;
+    constexpr int kDefaultEditorHeight = 620;
 
     // Analyzer / FFT
     constexpr int kFFTOrder = 12;

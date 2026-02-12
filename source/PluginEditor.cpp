@@ -18,18 +18,21 @@ AdvancedCompressorEditor::AdvancedCompressorEditor (AdvancedCompressorProcessor&
       headerToolbar (p),
       compressorDisplay (p),
       controlStrip (p),
-      sidechainPanel (p.getAPVTS())
+      presetBrowser (p.getPresetManager())
 {
     setLookAndFeel (&lookAndFeel);
 
     addAndMakeVisible (headerToolbar);
     addAndMakeVisible (compressorDisplay);
     addAndMakeVisible (controlStrip);
-    addChildComponent (sidechainPanel); // hidden initially
+    addChildComponent (presetBrowser);  // hidden initially
     addAndMakeVisible (helpOverlay);
 
-    // Wire SC drawer toggle
-    controlStrip.onSidechainToggle = [this] { toggleSidechainDrawer(); };
+    // Preset name click - toggle browser panel
+    headerToolbar.onPresetNameClicked = [this]
+    {
+        presetBrowser.setVisible (! presetBrowser.isVisible());
+    };
 
     setSize (Constants::kDefaultEditorWidth, Constants::kDefaultEditorHeight);
     setResizable (true, true);
@@ -50,56 +53,21 @@ void AdvancedCompressorEditor::resized()
 {
     auto bounds = getLocalBounds();
 
-    headerToolbar.setBounds (bounds.removeFromTop (40));
+    headerToolbar.setBounds (bounds.removeFromTop (36));
 
-    // Bottom panel: control strip (Row1 + Row2 + SC bar) = ~204px
-    int bottomPanelH = 204;
-    int scDrawerH = scDrawerOpen ? 140 : 0;
-
-    // SC drawer at the very bottom (when open)
-    if (scDrawerOpen)
-    {
-        sidechainPanel.setBounds (bounds.removeFromBottom (scDrawerH));
-    }
-
+    // Bottom panel: tabbed control strip (28 tab bar + 142 content + 30 utility)
+    int bottomPanelH = 200;
     controlStrip.setBounds (bounds.removeFromBottom (bottomPanelH));
+
     compressorDisplay.setBounds (bounds);
+
+    // Preset browser panel (right overlay on compressor display)
+    auto displayBounds = compressorDisplay.getBounds();
+    presetBrowser.setBounds (displayBounds.getRight() - 350,
+                              displayBounds.getY(),
+                              350, displayBounds.getHeight());
 
     // Help overlay covers everything
     helpOverlay.setBounds (getLocalBounds());
     helpOverlay.toFront (false);
-}
-
-void AdvancedCompressorEditor::toggleSidechainDrawer()
-{
-    scDrawerOpen = ! scDrawerOpen;
-    controlStrip.setSidechainOpen (scDrawerOpen);
-
-    if (scDrawerOpen)
-    {
-        sidechainPanel.setVisible (true);
-    }
-
-    // Animate the resize
-    int newHeight = scDrawerOpen
-        ? getHeight() + 140
-        : getHeight() - 140;
-
-    // Clamp to limits
-    auto [minW, minH, maxW, maxH] = std::tuple { 860, 495, 1800, 1350 };
-    newHeight = juce::jlimit (minH, maxH, newHeight);
-
-    // Use animator for smooth transition
-    auto targetBounds = getBounds().withHeight (newHeight);
-    animator.animateComponent (this, targetBounds, 1.0f, 200, false, 0.5, 0.0);
-
-    if (! scDrawerOpen)
-    {
-        // Hide after animation would complete
-        juce::Timer::callAfterDelay (220, [this]
-        {
-            if (! scDrawerOpen)
-                sidechainPanel.setVisible (false);
-        });
-    }
 }

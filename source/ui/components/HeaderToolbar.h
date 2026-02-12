@@ -15,7 +15,6 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "../../presets/PresetManager.h"
 #include "../LookAndFeel/ColourPalette.h"
-#include "IconButton.h"
 
 class AdvancedCompressorProcessor;
 
@@ -30,22 +29,24 @@ public:
     void resized() override;
     void presetChanged() override;
 
+    std::function<void()> onPresetNameClicked;
+
 private:
     AdvancedCompressorProcessor& processor;
     PresetManager& presetManager;
 
-    // Preset controls
-    IconButton prevButton;
-    IconButton nextButton;
+    // Preset controls (Unicode icon buttons)
+    juce::TextButton prevButton { juce::String::charToString (0x25C0) };
+    juce::TextButton nextButton { juce::String::charToString (0x25B6) };
     juce::TextButton presetNameButton { "Init" };
-    IconButton saveButton;
+    juce::TextButton saveButton { juce::String::charToString (0x2913) };
 
-    // Actions
-    IconButton undoButton;
-    IconButton redoButton;
-    IconButton deltaButton;
+    // Actions (Unicode icon buttons)
+    juce::TextButton undoButton { juce::String::charToString (0x21A9) };
+    juce::TextButton redoButton { juce::String::charToString (0x21AA) };
 
-    // A/B comparison (kept as text)
+    // Text buttons
+    juce::TextButton deltaButton { "Delta" };
     juce::TextButton abButton { "A" };
     juce::TextButton copyABButton { "A>B" };
     juce::TextButton midiLearnButton { "MIDI" };
