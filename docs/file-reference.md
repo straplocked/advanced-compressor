@@ -45,9 +45,9 @@ Complete listing of all source files with descriptions.
 
 | File | Description |
 |------|-------------|
-| `ParameterIDs.h` | 30 string ID constants (`ParamIDs::kThreshold`, etc.) plus helper functions returning `StringArray` for style/mode/oversampling names. |
-| `ParameterLayout.h/cpp` | APVTS layout factory. Creates all 30 parameters with ranges, defaults, and skew factors. |
-| `CompressorParameterAttachment.h` | Lock-free parameter bridge. Caches 30 `std::atomic<float>*` pointers. `getCurrentParameters()` performs atomic loads into a `CompressorParameters` struct. |
+| `ParameterIDs.h` | 51 string ID constants (`ParamIDs::kThreshold`, etc.) plus helper functions returning `StringArray` for style/mode/oversampling names. |
+| `ParameterLayout.h/cpp` | APVTS layout factory. Creates all 51 parameters with ranges, defaults, and skew factors. |
+| `CompressorParameterAttachment.h` | Lock-free parameter bridge. Caches 51 `std::atomic<float>*` pointers. `getCurrentParameters()` performs atomic loads into a `CompressorParameters` struct. |
 
 ## Presets (`source/presets/`)
 

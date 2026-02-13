@@ -12,7 +12,7 @@ Advanced Compressor follows the same architecture as Advanced EQ: a JUCE `AudioP
 │                                                     │
 │  ┌─────────────────────┐  ┌──────────────────────┐  │
 │  │  APVTS              │  │  CompressorParam-    │  │
-│  │  (30 parameters)    │──│  Attachment          │  │
+│  │  (51 parameters)    │──│  Attachment          │  │
 │  │                     │  │  (atomic<float>*)    │  │
 │  └─────────────────────┘  └──────────────────────┘  │
 │                                      │              │
@@ -128,7 +128,7 @@ Plugin state is saved/restored as XML via APVTS:
 <AdvancedCompressorState>
   <PARAM id="threshold" value="-20.0"/>
   <PARAM id="ratio" value="4.0"/>
-  <!-- ... all 30 parameters ... -->
+  <!-- ... all 51 parameters ... -->
 </AdvancedCompressorState>
 ```
 

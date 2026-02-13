@@ -19,7 +19,7 @@
 ## Quick Start
 
 ```bash
-git clone --recurse-submodules <repo-url>
+git clone --recurse-submodules https://github.com/straplocked/advanced-compressor.git
 cd advanced-compressor
 cmake -B build
 cmake --build build
