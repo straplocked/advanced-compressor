@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Advanced Compressor is a JUCE 7 audio plugin (VST3/AU/CLAP/Standalone) implementing a professional dynamics compressor with 12 styles, character saturation, sidechain EQ, M/S processing, oversampling up to 32x, undo/redo, A/B comparison, and delta monitoring. Sister plugin to Advanced EQ (`../advanced-eq`).
+Advanced Compressor is a JUCE 7 audio plugin (VST3/AU/CLAP/Standalone) implementing a professional dynamics compressor with 14 styles (including upward and TTM), character saturation, 6-band sidechain EQ, M/S processing, oversampling up to 32x, host-synced rhythmic compression, undo/redo, A/B comparison, and delta monitoring. Sister plugin to Advanced EQ (`../advanced-eq`).
 
 ![Advanced Compressor](docs/images/plugin-screenshot.png)
 
@@ -19,7 +19,7 @@ Requires CMake 3.25+, C++20 compiler, JUCE 7.0.12 (submodule). Builds Standalone
 - **Lock-free audio thread**: Parameters read via `std::atomic<float>*` in `CompressorParameterAttachment`. Never allocate, lock, or do I/O on the audio thread.
 - **Triple-buffered data transfer**: `TripleBuffer<T>` passes metering and FFT data from audio thread to UI thread without locks.
 - **Per-sample processing**: Compression runs sample-by-sample in `CompressorEngine::process()` for accurate envelope tracking.
-- **APVTS with Undo**: All 37 parameters managed via `juce::AudioProcessorValueTreeState` backed by `juce::UndoManager`. Parameter layout in `ParameterLayout.cpp`.
+- **APVTS with Undo**: All 51 parameters managed via `juce::AudioProcessorValueTreeState` backed by `juce::UndoManager`. Parameter layout in `ParameterLayout.cpp`.
 - **A/B comparison**: Two `ValueTree` snapshots swapped via `apvts.replaceState()`.
 
 ## Key Source Paths
@@ -30,7 +30,7 @@ Requires CMake 3.25+, C++20 compiler, JUCE 7.0.12 (submodule). Builds Standalone
 | `source/PluginEditor.h/cpp` | 3-panel GUI layout |
 | `source/dsp/CompressorEngine.h/cpp` | Top-level DSP chain (compression + character + auto threshold) |
 | `source/dsp/CompressorCore.h/cpp` | Per-channel detector+computer+envelope |
-| `source/dsp/CompressorStyle.h` | 12 styles + StyleBehavior definitions |
+| `source/dsp/CompressorStyle.h` | 14 styles + StyleBehavior definitions |
 | `source/dsp/EnvelopeFollower.h/cpp` | Attack/release/hold with opto, program-dependent, and gain-dependent modes |
 | `source/dsp/GainComputer.h` | Soft-knee gain computation with optional variable ratio (Vari-Mu) |
 | `source/dsp/CharacterProcessor.h` | Tube/Diode/Bright saturation waveshapers with drive |
@@ -42,7 +42,7 @@ Requires CMake 3.25+, C++20 compiler, JUCE 7.0.12 (submodule). Builds Standalone
 | `source/utils/Constants.h` | All ranges, defaults, UI dimensions |
 | `source/ui/LookAndFeel/ColourPalette.h` | Color scheme |
 
-## Compression Styles (12)
+## Compression Styles (14)
 
 | Style | Detection | Topology | Character |
 |-------|-----------|----------|-----------|
@@ -58,6 +58,8 @@ Requires CMake 3.25+, C++20 compiler, JUCE 7.0.12 (submodule). Builds Standalone
 | Smooth | RMS | Feedforward | Super-smooth, large knee |
 | Op-El | RMS | Feedforward | Gain-dependent attack (warm opto-tube) |
 | Vari-Mu | RMS | Feedback | Variable ratio with signal level |
+| Upward | RMS | Feedforward | Boosts signals below threshold |
+| TTM | RMS | Feedforward | Combined downward + upward compression |
 
 ## Character Modes
 

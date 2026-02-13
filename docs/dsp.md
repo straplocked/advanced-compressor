@@ -100,24 +100,33 @@ feedbackGR = smoothedGR  // stored for next sample
 
 Each style is defined by a `StyleBehavior` struct in `CompressorStyle.h`:
 
-| Style | Peak | RMS | Feedback | Attack Scale | Release Scale | Knee Offset | Ratio Scale | Prog.Dep. |
-|-------|------|-----|----------|-------------|--------------|-------------|-------------|-----------|
-| Clean | Yes | No | No | 1.0x | 1.0x | +0 dB | 1.0x | Yes |
-| Classic | No | Yes | Yes | 1.2x | 1.5x | +0 dB | 1.0x | Yes |
-| Opto | No | Yes | No | 2.0x | 3.0x | +3 dB | 0.8x | No (2-stage) |
-| Vocal | Yes | Yes | No | 0.8x | 1.0x | +4 dB | 0.9x | Yes |
-| Mastering | No | Yes | No | 1.5x | 1.2x | +6 dB | 1.0x | No |
-| Bus | No | Yes | Yes | 1.0x | 1.0x | +3 dB | 1.0x | Yes |
-| Punch | Yes | No | No | 0.3x | 0.5x | +0 dB | 1.0x | No |
-| Pumping | Yes | No | No | 0.5x | 2.5x | +0 dB | 1.2x | No |
+| Style | Peak | RMS | Feedback | Attack Scale | Release Scale | Knee Offset | Ratio Scale | Special |
+|-------|------|-----|----------|-------------|--------------|-------------|-------------|---------|
+| Clean | Yes | No | No | 1.0x | 1.0x | +0 dB | 1.0x | Prog.dep. release |
+| Classic | No | Yes | Yes | 1.2x | 1.5x | +0 dB | 1.0x | Prog.dep. release |
+| Opto | No | Yes | No | 2.0x | 3.0x | +3 dB | 0.8x | Two-stage release |
+| Vocal | Yes | Yes | No | 0.8x | 1.0x | +4 dB | 0.9x | Prog.dep. release |
+| Mastering | No | Yes | No | 1.5x | 1.2x | +6 dB | 1.0x | -- |
+| Bus | No | Yes | Yes | 1.0x | 1.0x | +3 dB | 1.0x | Prog.dep. release |
+| Punch | Yes | No | No | 0.3x | 0.5x | +0 dB | 1.0x | -- |
+| Pumping | Yes | No | No | 0.5x | 2.5x | +0 dB | 1.2x | -- |
+| Versatile | Yes | Yes | No | 1.0x | 1.0x | +2 dB | 1.0x | Prog.dep. release |
+| Smooth | No | Yes | No | 2.5x | 2.0x | +12 dB | 0.7x | -- |
+| Op-El | No | Yes | No | 1.5x | 2.5x | +4 dB | 0.85x | Gain-dep. attack |
+| Vari-Mu | No | Yes | Yes | 1.8x | 1.5x | +8 dB | 1.0x | Variable ratio |
+| Upward | No | Yes | No | 1.0x | 1.2x | +4 dB | 1.0x | Upward compression |
+| TTM | No | Yes | No | 1.0x | 1.0x | +4 dB | 1.0x | Down + upward combined |
 
 ## Sidechain EQ
 
-Three SVF filters in series on the sidechain signal:
+Six SVF filters in series on the sidechain signal:
 
-1. **Low Cut** (High-Pass): 20 Hz - 20 kHz, toggleable
-2. **Band** (Bell): 20 Hz - 20 kHz, gain -15 to +15 dB, always active when gain != 0
-3. **High Cut** (Low-Pass): 20 Hz - 20 kHz, toggleable
+1. **Low Cut** (High-Pass): 20 Hz - 20 kHz, toggleable, variable slope (6/12/24/48/96 dB/oct)
+2. **Low Shelf**: 20 Hz - 20 kHz, gain -15 to +15 dB, toggleable
+3. **Band 1** (Bell): 20 Hz - 20 kHz, gain -15 to +15 dB, Q 0.1-10
+4. **Band 2** (Bell): 20 Hz - 20 kHz, gain -15 to +15 dB, Q 0.1-10
+5. **High Shelf**: 20 Hz - 20 kHz, gain -15 to +15 dB, toggleable
+6. **High Cut** (Low-Pass): 20 Hz - 20 kHz, toggleable, variable slope (6/12/24/48/96 dB/oct)
 
 Uses the Cytomic TPT SVF filter implementation copied from Advanced EQ, which is unconditionally stable and zipper-free under modulation.
 
@@ -138,6 +147,8 @@ grR = grR + link * (linkedGR - grR)
 - **Normal**: Standard stereo processing
 - **Mid**: M/S encode -> compress mid channel only (grR = 0) -> M/S decode
 - **Side**: M/S encode -> compress side channel only (grL = 0) -> M/S decode
+- **M>S**: Mid channel sidechain drives side channel compression
+- **S>M**: Side channel sidechain drives mid channel compression
 
 M/S encoding: `Mid = (L+R)/2`, `Side = (L-R)/2`
 M/S decoding: `L = Mid + Side`, `R = Mid - Side`
@@ -173,6 +184,9 @@ Wraps `juce::dsp::Oversampling<float>` with half-band polyphase IIR filters:
 | 1x | 1 | 0 samples |
 | 2x | 2 | ~8 samples |
 | 4x | 4 | ~24 samples |
+| 8x | 8 | ~56 samples |
+| 16x | 16 | ~120 samples |
+| 32x | 32 | ~248 samples |
 
 Latency is reported to the host alongside lookahead latency.
 

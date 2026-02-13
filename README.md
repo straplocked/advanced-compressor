@@ -3,16 +3,16 @@
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0--or--later-blue.svg)](LICENSE)
 [![CI](https://github.com/straplocked/advanced-compressor/actions/workflows/ci.yml/badge.svg)](https://github.com/straplocked/advanced-compressor/actions/workflows/ci.yml)
 
-A professional dynamics compressor audio plugin built with [JUCE 7](https://juce.com/). Features 12 compression styles, character saturation (Tube/Diode/Bright), 3-band sidechain EQ, M/S processing, oversampling up to 32x, undo/redo, A/B comparison, delta listen mode, auto threshold, MIDI trigger, and a real-time spectrum analyzer.
+A professional dynamics compressor audio plugin built with [JUCE 7](https://juce.com/). Features 14 compression styles (including upward and combined downward+upward), character saturation (Tube/Diode/Bright), 6-band sidechain EQ, M/S processing, oversampling up to 32x, host-synced rhythmic compression, undo/redo, A/B comparison, delta listen mode, auto threshold, MIDI trigger, and a real-time spectrum analyzer.
 
 ![Advanced Compressor](docs/images/plugin-screenshot.png)
 
 ## Features
 
-- **12 Compression Styles** -- Clean, Classic, Opto, Vocal, Mastering, Bus, Punch, Pumping, Versatile, Smooth, Op-El, Vari-Mu -- each with distinct detection modes, ballistics, and character
+- **14 Compression Styles** -- Clean, Classic, Opto, Vocal, Mastering, Bus, Punch, Pumping, Versatile, Smooth, Op-El, Vari-Mu, Upward, TTM -- each with distinct detection modes, ballistics, and character
 - **Character Saturation** -- Tube, Diode, and Bright modes with adjustable Drive (0-24 dB)
 - **Soft-Knee Compression** with adjustable knee width (0-72 dB) and range limiting
-- **3-Band Sidechain EQ** -- low cut, band (bell), high cut with full frequency control
+- **6-Band Sidechain EQ** -- low cut, low shelf, two bell bands, high shelf, high cut with full frequency/gain/slope control
 - **External Sidechain** input with audition mode
 - **Mid/Side Processing** -- 5 stereo modes: Normal, Mid, Side, M>S, S>M
 - **Stereo Link** -- 0-100% continuously variable between dual-mono and linked
@@ -29,6 +29,7 @@ A professional dynamics compressor audio plugin built with [JUCE 7](https://juce
 - **19 Factory Presets** across Vocal, Drums, Bus, Mastering, and Creative categories
 - **Input/Output Gain and Pan** controls
 - **Hover Help** -- hold your cursor over any control for 1.3 seconds to see a contextual tooltip
+- **Host-Synced Rhythmic Compression** -- tempo-synced triggering with square, triangle, sine, and sawtooth shapes
 - **Collapsible Sidechain Drawer** -- animated expand/collapse panel for the 6-band SC EQ
 - **Pro-C 3 Inspired Layout** -- two-tier control panel with large primary knobs and compact secondary controls, meters on the right
 
@@ -48,6 +49,8 @@ A professional dynamics compressor audio plugin built with [JUCE 7](https://juce
 | **Smooth** | RMS | Feedforward | Super-smooth, large knee |
 | **Op-El** | RMS | Feedforward | Gain-dependent attack (warm opto-tube) |
 | **Vari-Mu** | RMS | Feedback | Variable ratio with signal level |
+| **Upward** | RMS | Feedforward | Boosts signals below threshold |
+| **TTM** | RMS | Feedforward | Combined downward + upward compression |
 
 ## Character Modes
 
@@ -149,7 +152,7 @@ advanced-compressor/
 
 ## Parameters
 
-37 automatable parameters across 8 groups:
+51 automatable parameters across 9 groups:
 
 | Group | Parameters |
 |-------|-----------|
@@ -157,10 +160,11 @@ advanced-compressor/
 | **Style** | Compression style (12 choices) |
 | **Gain/Mix** | Input/Output Gain, Input/Output Pan, Wet Gain, Auto Gain, Mix |
 | **Character** | Character Mode (Off/Tube/Diode/Bright), Drive |
-| **Sidechain** | External, Audition, LC Freq/On, Band Freq/Gain, HC Freq/On |
+| **Sidechain** | External, Audition, Delta, LC Freq/On/Slope, Low Shelf Freq/Gain/On, Band Freq/Gain/Q, Band 2 Freq/Gain/Q, High Shelf Freq/Gain/On, HC Freq/On/Slope |
 | **Stereo** | Stereo Link, Stereo Mode |
 | **Auto** | Auto Threshold |
-| **Global** | Analyzer On/Pre, Oversampling, Meter Scale, Delta, MIDI Trigger |
+| **MIDI/Sync** | MIDI Trigger, Host Sync, Sync Division, Sync Shape |
+| **Global** | Analyzer On/Pre, Oversampling, Compact Mode, Meter Scale |
 
 ## Tech Stack
 

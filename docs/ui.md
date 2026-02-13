@@ -2,7 +2,7 @@
 
 ## Layout
 
-The editor uses a 3-panel layout at a default size of 1000x600 pixels, resizable from 750x450 to 1920x1080.
+The editor uses a 3-panel layout at a default size of 960x620 pixels, resizable from 750x450 to 1920x1080.
 
 ```
 ┌──────────────────────────────────────────────────────┐
@@ -42,8 +42,8 @@ Top bar with plugin title and global controls.
 | Prev/Next buttons | TextButton | Navigate presets |
 | Preset name | TextButton | Opens preset menu popup |
 | Save button | TextButton | Opens save dialog |
-| Style selector | ComboBox | 8 compression styles |
-| Oversample selector | ComboBox | 1x/2x/4x |
+| Style selector | ComboBox | 14 compression styles |
+| Oversample selector | ComboBox | 1x/2x/4x/8x/16x/32x |
 | Analyzer toggle | TextButton | Show/hide spectrum |
 | Output gain knob | Rotary slider | Output level control |
 
@@ -114,7 +114,7 @@ Bottom panel with all compressor parameter knobs.
 | Mix | Dry/wet mix (0-200%) |
 | Wet Gain | Wet signal gain (-30 to 30 dB) |
 | Stereo Link | Link amount (0-100%) |
-| Stereo Mode | Normal/Mid/Side (combo) |
+| Stereo Mode | Normal/Mid/Side/M>S/S>M (combo) |
 
 Includes a `SidechainMeterRing` overlaid on the Threshold knob and an embedded `SidechainPanel`.
 
@@ -122,12 +122,14 @@ Includes a `SidechainMeterRing` overlaid on the Threshold knob and an embedded `
 
 **Source**: `ui/components/SidechainPanel.h/cpp`
 
-Panel with sidechain EQ controls:
+Panel with 6-band sidechain EQ controls:
 
-- LC frequency knob + on/off toggle
-- Band frequency knob
-- Band gain knob
-- HC frequency knob + on/off toggle
+- Low Cut: frequency knob, on/off toggle, slope selector (6-96 dB/oct)
+- Low Shelf: frequency knob, gain knob, on/off toggle
+- Band 1: frequency knob, gain knob, Q knob
+- Band 2: frequency knob, gain knob, Q knob
+- High Shelf: frequency knob, gain knob, on/off toggle
+- High Cut: frequency knob, on/off toggle, slope selector (6-96 dB/oct)
 
 All attached to APVTS parameters.
 

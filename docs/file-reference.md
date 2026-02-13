@@ -7,7 +7,7 @@ Complete listing of all source files with descriptions.
 | File | Description |
 |------|-------------|
 | `source/PluginProcessor.h/cpp` | Main `AudioProcessor` subclass. Owns APVTS, CompressorEngine, FFT processors, PresetManager. Handles `processBlock()`, state serialization, bus layout, and latency reporting. |
-| `source/PluginEditor.h/cpp` | Main `AudioProcessorEditor`. 3-panel layout: HeaderToolbar (36px top), CompressorDisplay (center), BottomControlStrip (110px bottom). Default 1000x600, resizable 750x450-1920x1080. |
+| `source/PluginEditor.h/cpp` | Main `AudioProcessorEditor`. 3-panel layout: HeaderToolbar (36px top), CompressorDisplay (center), BottomControlStrip (110px bottom). Default 960x620, resizable 750x450-1920x1080. |
 
 ## DSP (`source/dsp/`)
 
@@ -18,8 +18,8 @@ Complete listing of all source files with descriptions.
 | `LevelDetector.h/cpp` | Audio level detection. Peak tracking with slow decay, one-pole RMS smoothing, and combined peak+RMS mode. Output in dBFS. |
 | `GainComputer.h/cpp` | Static transfer characteristic. Computes gain reduction from input level using soft-knee with threshold, ratio, knee width, and range parameters. |
 | `EnvelopeFollower.h/cpp` | Ballistics shaping for gain reduction. One-pole attack/release with hold, opto two-stage release (LDR model), and program-dependent release. Scales user timing values per `StyleBehavior`. |
-| `CompressorStyle.h` | Defines 8 compression styles as enum + `StyleBehavior` struct. Each style specifies detection mode, topology, timing scales, knee offset, and ratio scale. |
-| `SidechainEQ.h/cpp` | 3-band sidechain EQ: toggleable low-cut (HP), bell band with gain, toggleable high-cut (LP). Uses SVFFilter. |
+| `CompressorStyle.h` | Defines 14 compression styles as enum + `StyleBehavior` struct. Each style specifies detection mode, topology, timing scales, knee offset, and ratio scale. |
+| `SidechainEQ.h/cpp` | 6-band sidechain EQ: low cut, low shelf, 2 bell bands, high shelf, high cut with variable slopes. Uses SVFFilter. |
 | `SVFFilter.h/cpp` | Cytomic Topology-Preserving Transform State Variable Filter. Copied from Advanced EQ. Supports all filter types, unconditionally stable, zipper-free. |
 | `MidSideProcessor.h` | Inline M/S encode/decode. `Mid=(L+R)/2`, `Side=(L-R)/2`, perfect reconstruction. |
 | `Oversampler.h/cpp` | Wrapper around `juce::dsp::Oversampling<float>`. Supports 1x/2x/4x with half-band polyphase IIR filters. Reports latency. |

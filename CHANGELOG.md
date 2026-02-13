@@ -12,9 +12,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 ## [0.1.0] - 2026-02-11
 
 ### Added
-- 12 compression styles: Clean, Classic, Opto, Vocal, Mastering, Bus, Punch, Pumping, Versatile, Smooth, Op-El, Vari-Mu
+- 14 compression styles: Clean, Classic, Opto, Vocal, Mastering, Bus, Punch, Pumping, Versatile, Smooth, Op-El, Vari-Mu, Upward, TTM
 - Character saturation modes: Off, Tube, Diode, Bright with Drive (0-24 dB)
-- 3-band sidechain EQ (low cut, bell, high cut)
+- 6-band sidechain EQ (low cut, low shelf, 2 bells, high shelf, high cut)
 - External sidechain input with audition
 - 5 stereo modes: Normal, Mid, Side, M>S, S>M
 - Stereo link (0-100%)
@@ -33,7 +33,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - Customizable meter scale (9/18/36/60/90 dB)
 - 19 factory presets across Vocal, Drums, Bus, Mastering, and Creative categories
 - Input/output gain and pan controls
-- 37 automatable parameters
+- 51 automatable parameters
 - VST3, AU, and Standalone formats (CLAP and AAX optional)
 
 [Unreleased]: https://github.com/straplocked/advanced-compressor/compare/v0.1.0...HEAD
