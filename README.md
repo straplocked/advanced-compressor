@@ -1,7 +1,7 @@
 # Advanced Compressor
 
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0--or--later-blue.svg)](LICENSE)
-[![CI](https://github.com/straplocked/advanced-compressor/actions/workflows/ci.yml/badge.svg)](https://github.com/straplocked/advanced-compressor/actions/workflows/ci.yml)
+[![Build](https://github.com/straplocked/advanced-compressor/actions/workflows/build.yml/badge.svg)](https://github.com/straplocked/advanced-compressor/actions/workflows/build.yml)
 
 A professional dynamics compressor audio plugin built with [JUCE 7](https://juce.com/). Features 14 compression styles (including upward and combined downward+upward), character saturation (Tube/Diode/Bright), 6-band sidechain EQ, M/S processing, oversampling up to 32x, host-synced rhythmic compression, undo/redo, A/B comparison, delta listen mode, auto threshold, MIDI trigger, and a real-time spectrum analyzer.
 
