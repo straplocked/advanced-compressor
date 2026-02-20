@@ -15,6 +15,7 @@
 #include "KneeDisplay.h"
 #include "LevelMeterComponent.h"
 #include "GainReductionDisplay.h"
+#include "GRHistoryGraph.h"
 #include "../../analyzer/SpectrumAnalyzer.h"
 #include "../../analyzer/FFTProcessor.h"
 #include "../../metering/LevelMeterData.h"
@@ -43,6 +44,7 @@ private:
     LevelMeterComponent inputMeter;
     LevelMeterComponent outputMeter;
     GainReductionDisplay grDisplay;
+    GRHistoryGraph grHistory;
 
     SpectrumAnalyzer spectrumPre;
     SpectrumAnalyzer spectrumPost;

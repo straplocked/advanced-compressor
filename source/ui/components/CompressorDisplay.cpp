@@ -25,6 +25,7 @@ CompressorDisplay::CompressorDisplay (AdvancedCompressorProcessor& p)
     addAndMakeVisible (outputMeter);
 
     addAndMakeVisible (grDisplay);
+    addAndMakeVisible (grHistory);
 
     spectrumPre.prepare (Constants::kCurveResolution);
     spectrumPost.prepare (Constants::kCurveResolution);
@@ -94,6 +95,12 @@ void CompressorDisplay::resized()
 
     // Knee display fills the entire main area
     kneeDisplay.setBounds (bounds.reduced (4));
+
+    // GR history graph: bottom 30% of the main display area (overlaid on knee/spectrum)
+    auto histBounds = bounds.reduced (4);
+    histBounds = histBounds.removeFromBottom (histBounds.getHeight() * 3 / 10);
+    grHistory.setBounds (histBounds);
+    grHistory.toFront (false);
 }
 
 void CompressorDisplay::timerCallback()
@@ -117,6 +124,7 @@ void CompressorDisplay::timerCallback()
         inputMeter.setLevels (frame->inputL, frame->inputR);
         outputMeter.setLevels (frame->outputL, frame->outputR);
         grDisplay.setGainReduction (std::min (frame->grL, frame->grR));
+        grHistory.pushGainReduction (std::min (frame->grL, frame->grR));
         grDisplay.setLevels (std::max (frame->inputL, frame->inputR),
                              std::max (frame->outputL, frame->outputR));
 
