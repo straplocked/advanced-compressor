@@ -61,6 +61,14 @@ namespace ColourPalette
     inline juce::Colour spectrumPre()      { return juce::Colour (0x30667766); }
     inline juce::Colour spectrumPost()     { return juce::Colour (0x507aff3a); }
 
+    // Sidechain EQ band colours (for per-band response curves)
+    inline juce::Colour scBandLC()     { return juce::Colour (0xff4488ff); }  // blue
+    inline juce::Colour scBandLS()     { return juce::Colour (0xff44ccaa); }  // teal
+    inline juce::Colour scBandB1()     { return juce::Colour (0xff7aff3a); }  // green
+    inline juce::Colour scBandB2()     { return juce::Colour (0xffffcc44); }  // amber
+    inline juce::Colour scBandHS()     { return juce::Colour (0xffff8844); }  // orange
+    inline juce::Colour scBandHC()     { return juce::Colour (0xffff4488); }  // pink
+
     // Sidechain ring meter gradient (from green through yellow to red)
     inline juce::Colour ringMeterLow()     { return juce::Colour (0xff4caf50); }
     inline juce::Colour ringMeterMid()     { return juce::Colour (0xffffeb3b); }

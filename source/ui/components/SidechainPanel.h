@@ -14,6 +14,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "../../parameters/ParameterIDs.h"
+#include "SidechainEQDisplay.h"
 
 class SidechainPanel : public juce::Component
 {
@@ -25,6 +26,8 @@ public:
     void resized() override;
 
 private:
+    SidechainEQDisplay eqDisplay;
+
     // Band 1: Low Cut
     juce::Slider lcFreqSlider;
     juce::TextButton lcOnButton { "LC" };

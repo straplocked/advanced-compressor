@@ -14,7 +14,9 @@
 #include "../LookAndFeel/Fonts.h"
 
 SidechainPanel::SidechainPanel (juce::AudioProcessorValueTreeState& apvts)
+    : eqDisplay (apvts)
 {
+    addAndMakeVisible (eqDisplay);
     auto setupSlider = [this] (juce::Slider& slider, juce::Label& label, const juce::String& text)
     {
         slider.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
@@ -129,12 +131,6 @@ void SidechainPanel::paint (juce::Graphics& g)
 {
     auto bounds = getLocalBounds().toFloat();
 
-    // Background
-    juce::ColourGradient grad (ColourPalette::panelTop().brighter (0.02f), 0, bounds.getY(),
-                               ColourPalette::panelBottom(), 0, bounds.getBottom(), false);
-    g.setGradientFill (grad);
-    g.fillRect (bounds);
-
     // Top bevel
     g.setColour (ColourPalette::bevelLight().withAlpha (0.3f));
     g.drawLine (0.0f, bounds.getY() + 0.5f, bounds.getRight(), bounds.getY() + 0.5f, 1.0f);
@@ -163,6 +159,7 @@ void SidechainPanel::paint (juce::Graphics& g)
 void SidechainPanel::resized()
 {
     auto bounds = getLocalBounds();
+    eqDisplay.setBounds (bounds);
     int numBands = 6;
     int bandW = bounds.getWidth() / numBands;
     int knobSize = 36;
